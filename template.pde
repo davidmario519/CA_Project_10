@@ -22,6 +22,7 @@ import netP5.*;
 
 OscP5 osc;          // Wekinator에서 오는 메시지 받기
 NetAddress wek;     // Wekinator로 입력 보내기
+PFont kor;
 
 // -----------------------------
 // 1. 입력(Feature) 개수 정의
@@ -65,6 +66,8 @@ String[] GENRE_NAMES = { "Jazz", "HipHop", "Cinematic" };
 // -----------------------------
 void setup() {
   size(900, 600);
+  kor = createFont("DXPnM-KSCpc-EUC-H.ttf", 24, true);
+  textFont(kor);
   surface.setTitle("Trio Loop Machine – ML Template");
 
   // Wekinator에서 오는 출력 메시지 받을 포트 (기본: 12000)
