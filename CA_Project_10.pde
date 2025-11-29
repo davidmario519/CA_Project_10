@@ -86,7 +86,23 @@ void draw() {
 // ----------------------------------------------
 void oscEvent(OscMessage m) {
   
-  if (m.checkAddrPattern("/wek/inputs")) return; // 디버그용
+  // if (m.checkAddrPattern("/wek/inputs")) return; // 디버그용
+  // 수신 패턴 로그
+  println("RAW", m.addrPattern(), m.arguments().length);
+  String tt = m.typetag();
+  for (int i = 0; i < m.arguments().length; i++) {
+    char t = (tt != null && tt.length() > i) ? tt.charAt(i) : '?';
+    if (t == 'f') {
+      println("  arg" + i + " (float): " + m.get(i).floatValue());
+    } else if (t == 'i') {
+      println("  arg" + i + " (int): " + m.get(i).intValue());
+    } else if (t == 's') {
+      println("  arg" + i + " (str): " + m.get(i).stringValue());
+    } else {
+      println("  arg" + i + " (" + t + "): " + m.get(i));
+    }
+  }
+
 
   // 수신 패턴 로그 (주소/인자 수 확인용)
   println("RX", m.addrPattern(), m.arguments().length);
