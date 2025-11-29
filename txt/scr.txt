@@ -1,0 +1,19 @@
+sound src
+
+sound src/cinematic
+sound src/cinematic/cinematic drum.mp3
+sound src/cinematic/cinematic guitar.mp3
+sound src/cinematic/cinematic vocal.mp3
+sound src/cinematic/cinematic.mp3
+
+sound src/hiphop
+sound src/hiphop/hiphop drum.mp3
+sound src/hiphop/hiphop guitar.mp3
+sound src/hiphop/hiphop vocal.mp3
+sound src/hiphop/hiphop.mp3
+
+sound src/jazz
+sound src/jazz/jazz drum.mp3
+sound src/jazz/jazz guitar.mp3
+sound src/jazz/jazz vocal.mp3
+sound src/jazz/jazz.mp3

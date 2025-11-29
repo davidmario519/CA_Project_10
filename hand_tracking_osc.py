@@ -17,7 +17,7 @@ hands = mp_hands.Hands(
 )
 
 # 사용자 설정 유지: 웹캠 2번, AVFOUNDATION 백엔드 사용
-cap = cv2.VideoCapture(2, cv2.CAP_AVFOUNDATION)
+cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
