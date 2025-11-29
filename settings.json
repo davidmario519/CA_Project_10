@@ -1,0 +1,12 @@
+{
+  "processing.java.home": "/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home",
+  "files.exclude": {
+    "txt/**": true
+  },
+  "search.exclude": {
+    "txt/**": true
+  },
+  "files.watcherExclude": {
+    "txt/**": true
+  }
+}

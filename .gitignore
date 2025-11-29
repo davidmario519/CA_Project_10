@@ -17,12 +17,13 @@
 /application.windows/
 /application.linux/
 
-# Processing data (large media)
-data/*.mp3
-data/*.wav
-data/*.aiff
-data/*.mp4
-data/*.mov
+# IF data folder contains required assets, do NOT ignore them
+# (예진 프로젝트에서는 sound files are required, so do NOT ignore)
+# data/*.mp3
+# data/*.wav
+# data/*.aiff
+# data/*.mp4
+# data/*.mov
 
 # Python
 __pycache__/
