@@ -1,104 +1,226 @@
-// ==============================================
-// 6_CA_Project_10.pde — MAIN ENTRY
-// Using WekiInputHelper (input helper)
-// ==============================================
+// =======================================================
+// Trio Loop – B 방식 (iOS Wekinator App direct input)
+// MotionReceiver 제거 + 스마트폰 벡터 자동 수신
+// =======================================================
 
+import processing.sound.*;
 import oscP5.*;
 import netP5.*;
-import wekinator.*;
-import processing.sound.*;
 
-WekiInputHelper helper;   // Wekinator input helper
-OscP5 osc;                // For OUTPUT only
+// OSC
+OscP5 oscIn;
 
-MotionReceiver motion;    // Raw sensor → feature 계산
-DrumTrigger drumTrigger;  // Output trigger
+// 3개의 Wekinator 모델
+NetAddress drumWek;
+NetAddress guitarWek;
+NetAddress vocalWek;
 
-PFont kor;
+// 스마트폰에서 받을 input vector (동적 크기)
+float[] inputVector = new float[0];   
+int numInputs = 0;
 
-// ----------------------------------------------
-// setup()
-// ----------------------------------------------
+// Output results
+int drumGenre = 0;
+int guitarGenre = 0;
+int vocalGenre = 0;
+
+String[] GENRE_NAMES = { "Jazz", "HipHop", "Cinematic" };
+
+// Wekinator 출력 시작값: 보통 1(1,2,3)이나 환경에 따라 0 또는 2일 수 있음
+int WEK_BASE_VALUE = 1; // 필요 시 0 또는 2로 조정
+
+// Audio triggers
+DrumTrigger drumTrigger;
+GuitarTrigger guitarTrigger;
+VocalTrigger vocalTrigger;
+
 void setup() {
-
   size(900, 600);
-  kor = createFont("DXPnM-KSCpc-EUC-H.ttf", 24, true);
-  textFont(kor);
-  surface.setTitle("Trio Loop Machine – WekiInputHelper Mode");
+  pixelDensity(1);   // 고해상도 경고 제거
+  surface.setTitle("Trio Loop – B 방식 (3 Wekinator Models - Direct Input)");
 
-  // 1) OUTPUT 수신 포트 먼저 열기
-  //    → adresses: /wek/outputs
-  osc = new OscP5(this, 9000);
+  // iPhone → Processing RAW input
+  oscIn = new OscP5(this, 4886);
 
-  // 2) iPhone에서 보내는 raw 센서 포트(4886)를 helper가 수신
-  helper = new WekiInputHelper(this, 4886);
+  // Processing → 3 Wekinator models
+  drumWek   = new NetAddress("127.0.0.1", 6448);
+  guitarWek = new NetAddress("127.0.0.1", 6449);
+  vocalWek  = new NetAddress("127.0.0.1", 6450);
 
-  // 3) helper에 입력(feature) 5개 등록
-  helper.addInput("force");
-  helper.addInput("gyroSwing");
-  helper.addInput("shake");
-  helper.addInput("smooth");
-  helper.addInput("gravity");
+  // Receive outputs
+  new OscP5(this, 9000).plug(this, "onDrumOut",   "/drumOut");
+  new OscP5(this, 9001).plug(this, "onGuitarOut", "/guitarOut");
+  new OscP5(this, 9002).plug(this, "onVocalOut",  "/vocalOut");
 
-  // 4) raw 센서 클래스
-  motion = new MotionReceiver();
-
-  // 5) 사운드 트리거 (output listener)
-  drumTrigger = new DrumTrigger(this);
-
-  println("=== WekiInputHelper Mode Ready ===");
+  // Prepare audio triggers
+  drumTrigger   = new DrumTrigger(this);
+  guitarTrigger = new GuitarTrigger(this);
+  vocalTrigger  = new VocalTrigger(this);
 }
 
-// ----------------------------------------------
-// draw()
-// ----------------------------------------------
 void draw() {
   background(20);
-
-  // 1) raw sensor → feature 계산
-  float force   = motion.getForce();
-  float gyro    = motion.getGyroSwing();
-  float shake   = motion.getShakeComplexity();
-  float smooth  = motion.getSmoothness();
-  float gravity = motion.getGravityTilt();
-
-  // 2) helper에 feature 값을 보내기 (이게 핵심!)
-  helper.setInputValue(0, force);
-  helper.setInputValue(1, gyro);
-  helper.setInputValue(2, shake);
-  helper.setInputValue(3, smooth);
-  helper.setInputValue(4, gravity);
-
-  // 3) Wekinator로 입력 전송
-  helper.sendInputs();
-
-  // 4) 디버그 UI
-  fill(255);
-  text("Force: " + nfs(force,1,3), 30,80);
-  text("GyroSwing: " + nfs(gyro,1,3), 30,110);
-  text("Shake: " + nfs(shake,1,3), 30,140);
-  text("Smooth: " + nfs(smooth,1,3), 30,170);
-  text("Gravity: " + nfs(gravity,1,3), 30,200);
+  sendInputsToAllModels();
+  drawDebug();
 }
 
-// ----------------------------------------------
-// OSC Event – receive Wekinator output
-// ----------------------------------------------
+// =======================================================
+// 스마트폰에서 직접 오는 /wek/inputs 메시지를 받기
+// =======================================================
 void oscEvent(OscMessage m) {
 
-  // iPhone raw 센서
-  if (m.checkAddrPattern("/accel") ||
-      m.checkAddrPattern("/gyro") ||
-      m.checkAddrPattern("/gravity")) {
-    motion.onOsc(m);
-    return;
+  println("ANY OSC RECEIVED:", m.addrPattern());
+
+  if (m.checkAddrPattern("/wek/inputs")) {
+
+    numInputs = m.arguments().length;
+
+    // inputVector 크기 자동 조정
+    if (inputVector.length != numInputs) {
+      inputVector = new float[numInputs];
+    }
+
+    for (int i = 0; i < numInputs; i++) {
+      inputVector[i] = m.get(i).floatValue();
+    }
+
+    println("SMARTPHONE INPUT VECTOR:", java.util.Arrays.toString(inputVector));
+  }
+}
+
+// =======================================================
+// 3개의 Wekinator 모델로 inputVector 전송
+// =======================================================
+void sendInputsToAllModels() {
+
+  if (numInputs == 0) return; // 아직 입력 없음 → 전송 안함
+
+  OscMessage msg = new OscMessage("/wek/inputs");
+  for (int i = 0; i < numInputs; i++) {
+    msg.add(inputVector[i]);
   }
 
-  // Wekinator output
-  if (m.checkAddrPattern("/wek/outputs")) {
-    drumTrigger.onOsc(m);
-    return;
+  oscIn.send(msg, drumWek);
+  oscIn.send(msg, guitarWek);
+  oscIn.send(msg, vocalWek);
+}
+
+// =======================================================
+// 3 Output Handlers
+// =======================================================
+// ===========================
+// DRUM Output 안정화 (25프레임 버퍼)
+// ===========================
+int currentDrum = 0;
+int pendingDrum = 0;
+int pendingDrumCount = 0;
+int drumThreshold = 25;
+
+public void onDrumOut(float v) {
+  int raw = mapWekOutputToIndex(v);   // base 값 보정 후 0-based
+
+  if (raw == pendingDrum) {
+    pendingDrumCount++;
+    if (pendingDrumCount >= drumThreshold) {
+      if (raw != currentDrum) {
+        currentDrum = raw;
+        println("[DRUM CONFIRMED] → " + genreLabel(currentDrum));
+        if (drumTrigger != null) drumTrigger.trigger(currentDrum);
+      }
+    }
+  } else {
+    pendingDrum = raw;
+    pendingDrumCount = 1;
   }
 
-  println("RX", m.addrPattern(), m.arguments().length);
+  drumGenre = currentDrum;
+}
+
+// ===========================
+// GUITAR Output 안정화 (25프레임 버퍼)
+// ===========================
+int currentGuitar = 0;
+int pendingGuitar = 0;
+int pendingGuitarCount = 0;
+int guitarThreshold = 25;
+
+public void onGuitarOut(float v) {
+  int raw = mapWekOutputToIndex(v);
+
+  if (raw == pendingGuitar) {
+    pendingGuitarCount++;
+    if (pendingGuitarCount >= guitarThreshold) {
+      if (raw != currentGuitar) {
+        currentGuitar = raw;
+        println("[GUITAR CONFIRMED] → " + genreLabel(currentGuitar));
+        if (guitarTrigger != null) guitarTrigger.trigger(currentGuitar);
+      }
+    }
+  } else {
+    pendingGuitar = raw;
+    pendingGuitarCount = 1;
+  }
+
+  guitarGenre = currentGuitar;
+}
+
+// ===========================
+// VOCAL Output 안정화 (25프레임 버퍼)
+// ===========================
+int currentVocal = 0;
+int pendingVocal = 0;
+int pendingVocalCount = 0;
+int vocalThreshold = 25;
+
+public void onVocalOut(float v) {
+  int raw = mapWekOutputToIndex(v);
+
+  if (raw == pendingVocal) {
+    pendingVocalCount++;
+    if (pendingVocalCount >= vocalThreshold) {
+      if (raw != currentVocal) {
+        currentVocal = raw;
+        println("[VOCAL CONFIRMED] → " + genreLabel(currentVocal));
+        if (vocalTrigger != null) vocalTrigger.trigger(currentVocal);
+      }
+    }
+  } else {
+    pendingVocal = raw;
+    pendingVocalCount = 1;
+  }
+
+  vocalGenre = currentVocal;
+}
+
+// Guard against invalid indexes coming from OSC
+int clampGenreIndex(int value) {
+  return constrain(value, 0, GENRE_NAMES.length - 1);
+}
+
+int mapWekOutputToIndex(float v) {
+  int zeroBased = round(v) - WEK_BASE_VALUE; // base 값을 빼서 0-based로 변환
+  return clampGenreIndex(zeroBased);
+}
+
+String genreLabel(int idx) {
+  if (idx < 0 || idx >= GENRE_NAMES.length) return "Unknown";
+  return GENRE_NAMES[idx];
+}
+
+// =======================================================
+// Debug UI
+// =======================================================
+void drawDebug() {
+
+  fill(255);
+  textSize(18);
+
+  text("=== SmartPhone Input Vector ===", 30, 60);
+  for (int i = 0; i < numInputs; i++) {
+    text("Input " + i + ": " + inputVector[i], 30, 90 + i * 20);
+  }
+
+  text("DRUM OUT : " + genreLabel(drumGenre), 30, 300);
+  text("GUITAR OUT : " + genreLabel(guitarGenre), 30, 330);
+  text("VOCAL OUT  : " + genreLabel(vocalGenre), 30, 360);
 }

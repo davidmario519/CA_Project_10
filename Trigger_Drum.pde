@@ -1,42 +1,28 @@
-// ==============================================
-// DrumTrigger.pde
-// ==============================================
-
 class DrumTrigger {
 
   SoundFile jazz;
   SoundFile hiphop;
   SoundFile cinematic;
 
-  int lastGenre = -1;
+  int last = -1;
+  String base;
 
   DrumTrigger(PApplet app) {
-
-    jazz      = new SoundFile(app, "src/sound src/jazz/jazz drum.mp3");
-    hiphop    = new SoundFile(app, "src/sound src/hiphop/hiphop drum.mp3");
-    cinematic = new SoundFile(app, "src/sound src/cinematic/cinematic drum.mp3");
-
-    println("[DrumTrigger] Ready");
+    // 오디오는 src/sound src/ 아래에 있으니 절대경로로 지정해 로딩 실패를 막는다
+    base = app.sketchPath("src/sound src");
+    jazz      = new SoundFile(app, base + "/jazz/jazz drum.mp3");
+    hiphop    = new SoundFile(app, base + "/hiphop/hiphop drum.mp3");
+    cinematic = new SoundFile(app, base + "/cinematic/cinematic drum.mp3");
   }
 
-  void onOsc(OscMessage m) {
-    if (!m.checkAddrPattern("/wek/outputs")) return;
-    if (m.arguments().length < 1) return;
-
-    int genre = constrain(round(m.get(0).floatValue()), 0, 2);
-    println("[OUTPUT] Drum genre =", genre);
-
-    trigger(genre);
-  }
-
-  void trigger(int g) {
-    if (g == lastGenre) return;
-    lastGenre = g;
-
+  void trigger(int genre) {
+    if (genre == last) return;
+    last = genre;
     stopAll();
-    if (g == 0) jazz.play();
-    else if (g == 1) hiphop.play();
-    else if (g == 2) cinematic.play();
+
+    if (genre == 0) jazz.play();
+    else if (genre == 1) hiphop.play();
+    else if (genre == 2) cinematic.play();
   }
 
   void stopAll() {
