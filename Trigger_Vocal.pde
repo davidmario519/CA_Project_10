@@ -8,7 +8,6 @@ class VocalTrigger {
   String base;
 
   VocalTrigger(PApplet app) {
-    base = app.sketchPath("src/sound src");
     jazz      = new SoundFile(app, base + "/jazz/jazz vocal.mp3");
     hiphop    = new SoundFile(app, base + "/hiphop/hiphop vocal.mp3");
     cinematic = new SoundFile(app, base + "/cinematic/cinematic vocal.mp3");

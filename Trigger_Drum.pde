@@ -8,8 +8,6 @@ class DrumTrigger {
   String base;
 
   DrumTrigger(PApplet app) {
-    // 오디오는 src/sound src/ 아래에 있으니 절대경로로 지정해 로딩 실패를 막는다
-    base = app.sketchPath("src/sound src");
     jazz      = new SoundFile(app, base + "/jazz/jazz drum.mp3");
     hiphop    = new SoundFile(app, base + "/hiphop/hiphop drum.mp3");
     cinematic = new SoundFile(app, base + "/cinematic/cinematic drum.mp3");

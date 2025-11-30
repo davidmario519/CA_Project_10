@@ -8,7 +8,6 @@ class GuitarTrigger {
   String base;
 
   GuitarTrigger(PApplet app) {
-    base = app.sketchPath("src/sound src");
     jazz      = new SoundFile(app, base + "/jazz/jazz guitar.mp3");
     hiphop    = new SoundFile(app, base + "/hiphop/hiphop guitar.mp3");
     cinematic = new SoundFile(app, base + "/cinematic/cinematic guitar.mp3");
