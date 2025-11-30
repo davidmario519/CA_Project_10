@@ -8,9 +8,6 @@ import netP5.*;
 import processing.sound.*;
 
 OscP5 osc;
-OscP5 oscDrumOut;
-OscP5 oscGuitarOut;
-OscP5 oscVocalOut;
 NetAddress wekDrum;
 NetAddress wekGuitar;
 NetAddress wekVocal;
@@ -38,29 +35,26 @@ void setup() {
   // Drum 사운드 트리거
   drumTrigger = new DrumTrigger(this);
 
-  // Wekinator Output 리스너
+  // Wekinator Output 리스너 (드럼/기타/보컬 모두 갱신)
   mlOut = new MLOutputClient(new MLOutputListener() {
-    public void onWekinatorOutput(int drum, int guitar, int vocal) {
-      handleWekinatorOutputValues(drum, guitar, vocal);
+    public void onWekinatorOutput(int drum, int g, int v) {
+      handleWekinatorOutputValues(drum, g, v);
     }
   });
 
   // MotionReceiver 생성
   motion = new MotionReceiver();
 
-  // OSC 수신 (MotionSender 포트: 4886)
+  // OSC 수신 (MotionSender + 모든 Wekinator 출력 동일 포트 4886)
   osc = new OscP5(this, 4886);
-  // Wekinator 모델별 입력 포트
+
+  // Wekinator 입력 포트 (드럼/기타/보컬 개별)
   wekDrum   = new NetAddress("127.0.0.1", 6448);
   wekGuitar = new NetAddress("127.0.0.1", 6450);
   wekVocal  = new NetAddress("127.0.0.1", 6452);
 
-  // Wekinator 모델별 출력 수신 포트
-  oscDrumOut   = new OscP5(this, 12001);
-  oscGuitarOut = new OscP5(this, 12002);
-  oscVocalOut  = new OscP5(this, 12003);
-
   // Controller 초기화
+  mlIn = new MLInputClient(osc);
   initInputVector();
 }
 
@@ -85,58 +79,28 @@ void draw() {
 // OSC Event Handler
 // ----------------------------------------------
 void oscEvent(OscMessage m) {
-  
-  // if (m.checkAddrPattern("/wek/inputs")) return; // 디버그용
-  // 수신 패턴 로그
-  println("RAW", m.addrPattern(), m.arguments().length);
-  String tt = m.typetag();
-  for (int i = 0; i < m.arguments().length; i++) {
-    char t = (tt != null && tt.length() > i) ? tt.charAt(i) : '?';
-    if (t == 'f') {
-      println("  arg" + i + " (float): " + m.get(i).floatValue());
-    } else if (t == 'i') {
-      println("  arg" + i + " (int): " + m.get(i).intValue());
-    } else if (t == 's') {
-      println("  arg" + i + " (str): " + m.get(i).stringValue());
-    } else {
-      println("  arg" + i + " (" + t + "): " + m.get(i));
-    }
+
+  String addr = m.addrPattern();
+
+  // 1) Smartphone MotionSender (raw sensor)
+  if (addr.equals("/accel") || addr.equals("/gyro") || addr.equals("/gravity")) {
+    motion.onOsc(m);
+    return;
   }
 
+  // 2) Wekinator input 에코/컨트롤 무시
+  if (addr.equals("/wek/inputs")) return;
+  if (addr.startsWith("/wekinator/control")) return;
 
-  // 수신 패턴 로그 (주소/인자 수 확인용)
-  println("RX", m.addrPattern(), m.arguments().length);
-
-  // Smartphone Motion Receiver
-  motion.onOsc(m);
-
-  if (m.checkAddrPattern("/accel")) {
-    println("ACC:", motion.ax, motion.ay, motion.az);
+  // 3) Wekinator OUTPUT (모델별 주소 포함)
+  if (addr.equals("/wek/outputs") ||
+      addr.equals("/wek/drum_out") ||
+      addr.equals("/wek/guitar_out") ||
+      addr.equals("/wek/vocal_out")) {
+    mlOut.onOsc(m);
+    return;
   }
 
-  if (m.checkAddrPattern("/gyro")) {
-    println("GYRO:", motion.rx, motion.ry, motion.rz);
-  }
-
-  if (m.checkAddrPattern("/gravity")) {
-    println("GRAV:", motion.gx, motion.gy, motion.gz);
-  }
-
-  // Wekinator Output (모델별 포트 분기)
-  if (m.checkAddrPattern("/wek/outputs")) {
-    NetAddress src = m.netAddress();
-    int port = (src != null) ? src.port() : -1;
-
-    if (port == 12001) {
-      handleDrumOutput(m);
-    } else if (port == 12002) {
-      handleGuitarOutput(m);
-    } else if (port == 12003) {
-      handleVocalOutput(m);
-    } else {
-      // 알 수 없는 포트 → 기본 핸들러
-      mlOut.onOsc(m);
-    }
-  }
-
+  // 4) Debugging
+  println("RX", addr, m.arguments().length);
 }

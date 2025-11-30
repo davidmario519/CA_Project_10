@@ -1,105 +1,84 @@
-// ==============================================
-// 1_Input_MotionReceiverOSC.pde
-// Smartphone MotionSender → Processing
-// with smoothing + highfreq detection + timestamp
-// ==============================================
+//--------------------------------------------------
+// MotionReceiverOSC.pde
+// 여러 종류의 OSC 센서 앱을 모두 지원하게 만든 버전
+//--------------------------------------------------
 
 class MotionReceiver {
 
-  // Raw sensor values
-  float ax, ay, az;
-  float gx, gy, gz;
-  float rx, ry, rz;
-
-  // Smoothed values
-  float sax, say, saz;
-  float srx, sry, srz;
-
-  // For vibration / cinematic detection
-  float prevAccMag = 0;
-  float highFreqScore = 0;
-
-  // Timestamp (ms)
-  long lastTimestamp = 0;
-
-  // Smoothing factor
-  float SMOOTH = 0.25;
+  // Raw sensors
+  float ax, ay, az;         // accel
+  float gx, gy, gz;         // gyro
+  float pitch, roll, yaw;   // orientation
 
   MotionReceiver() {}
 
-  // -----------------------------
-  // OSC 입력 처리
-  // -----------------------------
   void onOsc(OscMessage m) {
 
-    // Timestamp 업데이트
-    lastTimestamp = millis();
-
-    if (m.checkAddrPattern("/accel")) {
+    // ================================
+    // 1) Accel
+    // ================================
+    if (m.checkAddrPattern("/accel")) {      // Processing MotionSender
       ax = m.get(0).floatValue();
       ay = m.get(1).floatValue();
       az = m.get(2).floatValue();
-
-      // Smooth accel
-      sax = lerp(sax, ax, SMOOTH);
-      say = lerp(say, ay, SMOOTH);
-      saz = lerp(saz, az, SMOOTH);
-
-      updateHighFreq();   // Cinematic 특징
     }
 
-    if (m.checkAddrPattern("/gravity")) {
+    if (m.checkAddrPattern("/acc")) {        // Kiwi iOS app
+      ax = m.get(0).floatValue();
+      ay = m.get(1).floatValue();
+      az = m.get(2).floatValue();
+    }
+
+    // ================================
+    // 2) Gyro
+    // ================================
+    if (m.checkAddrPattern("/gyro")) {       // Kiwi + Processing
       gx = m.get(0).floatValue();
       gy = m.get(1).floatValue();
       gz = m.get(2).floatValue();
     }
 
-    if (m.checkAddrPattern("/gyro")) {
-      rx = m.get(0).floatValue();
-      ry = m.get(1).floatValue();
-      rz = m.get(2).floatValue();
-
-      // Smooth gyro
-      srx = lerp(srx, rx, SMOOTH);
-      sry = lerp(sry, ry, SMOOTH);
-      srz = lerp(srz, rz, SMOOTH);
+    if (m.checkAddrPattern("/gyroscope")) {  // 일부 앱
+      gx = m.get(0).floatValue();
+      gy = m.get(1).floatValue();
+      gz = m.get(2).floatValue();
     }
+
+    // ================================
+    // 3) Orientation (Attitude)
+    // ================================
+    if (m.checkAddrPattern("/gravity")) {    // Processing MotionSender
+      pitch = m.get(0).floatValue();
+      roll  = m.get(1).floatValue();
+      yaw   = m.get(2).floatValue();
+    }
+
+    if (m.checkAddrPattern("/att")) {       // Kiwi iOS app (pitch,roll,yaw)
+      pitch = m.get(0).floatValue();
+      roll  = m.get(1).floatValue();
+      yaw   = m.get(2).floatValue();
+    }
+
+    // Debug log
+    println("[OSC] " + m.addrPattern() + " -> "
+       + nf(ax,1,3) + ","
+       + nf(ay,1,3) + ","
+       + nf(az,1,3) + " | "
+       + nf(gx,1,3) + ","
+       + nf(gy,1,3) + ","
+       + nf(gz,1,3) + " | "
+       + nf(pitch,1,3) + ","
+       + nf(roll,1,3) + ","
+       + nf(yaw,1,3)
+    );
   }
 
-  // -----------------------------
-  // Cinematic 구분용 high-frequency score 계산
-  // -----------------------------
-  void updateHighFreq() {
-    float mag = sqrt(sax*sax + say*say + saz*saz);
-    float diff = abs(mag - prevAccMag);
-
-    // diff가 클수록 high-frequency vibration
-    highFreqScore = lerp(highFreqScore, diff, 0.6);
-
-    prevAccMag = mag;
-  }
-
-  // -----------------------------
-  // Feature 계산 함수들
-  // -----------------------------
-  float getForce() {
-    return sqrt(sax*sax + say*say + saz*saz);      // HipHop 구분용
-  }
-
-  float getGyroSwing() {
-    return sqrt(srx*srx + sry*sry + srz*srz);      // Jazz 구분용
-  }
-
-  float getShakeComplexity() {
-    return highFreqScore;                           // Cinematic 구분용
-  }
-
-  float getSmoothness() {
-    // 회전의 변동성이 낮을수록 부드럽다
-    return 1.0 / (1.0 + getGyroSwing());
-  }
-
-  float getGravityTilt() {
-    return abs(gy);                                 // 약간의 보조 신호
-  }
+  // =======================================================
+  // Feature functions (그대로 사용)
+  // =======================================================
+  float getForce() { return abs(ax) + abs(ay) + abs(az); }
+  float getGyroSwing() { return abs(gx) + abs(gy) + abs(gz); }
+  float getShakeComplexity() { return noise(frameCount*0.1)*0.5; }
+  float getSmoothness() { return 1.0 - getGyroSwing(); }
+  float getGravityTilt() { return abs(pitch) + abs(roll); }
 }

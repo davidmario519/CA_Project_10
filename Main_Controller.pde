@@ -23,6 +23,7 @@ final int VOCAL_OFFSET  = GUITAR_OFFSET + NUM_GUITAR_FEATURES;
 
 // Input vector (전체 ML 입력)
 float[] inputVector = new float[NUM_INPUTS];
+MLInputClient mlIn;
 
 // Wekinator Output (genre)
 int drumGenre   = 0;
@@ -48,11 +49,13 @@ void updateFeaturesFromSensors() {
   // -------------------------
 
   // 0~1 정규화 후 전송 (Wekinator 학습 안정화)
-  float forceNorm   = constrain(motion.getForce() / 5.0, 0, 1);      // 힘 (HipHop)
-  float gyroNorm    = constrain(motion.getGyroSwing() / 20.0, 0, 1); // 회전량 (Jazz)
-  float shakeNorm   = constrain(motion.getShakeComplexity(), 0, 1);  // 진동 패턴 (Cinematic)
-  float smoothNorm  = constrain(motion.getSmoothness(), 0, 1);       // 부드러움
-  float gravityNorm = constrain(motion.getGravityTilt(), 0, 1);      // 기울기
+float forceNorm = constrain(motion.getForce() / 2.0, 0, 1);  // 기존 /5
+float gyroNorm  = constrain(motion.getGyroSwing() / 10.0, 0, 1); // 기존 /20
+float shakeNorm = constrain(motion.getShakeComplexity(), 0, 1);
+float smoothNorm = constrain(motion.getSmoothness(), 0, 1);
+float gravityNorm = constrain(motion.getGravityTilt(), 0, 1);
+println("feat norm", forceNorm, gyroNorm, shakeNorm, smoothNorm, gravityNorm);
+
 
   inputVector[DRUM_OFFSET + 0] = forceNorm;
   inputVector[DRUM_OFFSET + 1] = gyroNorm;
@@ -76,20 +79,20 @@ void updateFeaturesFromSensors() {
 // ==================================================
 void sendInputsToWekinator() {
 
-  // Drum 모델로 5개 전송 (64048)
-  OscMessage drumMsg = new OscMessage("/wek/inputs");
-  for (int i = 0; i < NUM_DRUM_FEATURES; i++) drumMsg.add(inputVector[DRUM_OFFSET + i]);
-  osc.send(drumMsg, wekDrum);
+  // 드럼 5개
+  float[] drumInputs = new float[NUM_DRUM_FEATURES];
+  for (int i = 0; i < NUM_DRUM_FEATURES; i++) drumInputs[i] = inputVector[DRUM_OFFSET + i];
+  mlIn.sendInputs(drumInputs, wekDrum);
 
-  // Guitar 모델로 4개 전송 (6450) — 현재 값이 없으면 0 유지
-  OscMessage guitarMsg = new OscMessage("/wek/inputs");
-  for (int i = 0; i < NUM_GUITAR_FEATURES; i++) guitarMsg.add(inputVector[GUITAR_OFFSET + i]);
-  osc.send(guitarMsg, wekGuitar);
+  // 기타 4개 (값 준비되면 업데이트)
+  float[] guitarInputs = new float[NUM_GUITAR_FEATURES];
+  for (int i = 0; i < NUM_GUITAR_FEATURES; i++) guitarInputs[i] = inputVector[GUITAR_OFFSET + i];
+  mlIn.sendInputs(guitarInputs, wekGuitar);
 
-  // Vocal 모델로 4개 전송 (6452) — 현재 값이 없으면 0 유지
-  OscMessage vocalMsg = new OscMessage("/wek/inputs");
-  for (int i = 0; i < NUM_VOCAL_FEATURES; i++) vocalMsg.add(inputVector[VOCAL_OFFSET + i]);
-  osc.send(vocalMsg, wekVocal);
+  // 보컬 4개 (값 준비되면 업데이트)
+  float[] vocalInputs = new float[NUM_VOCAL_FEATURES];
+  for (int i = 0; i < NUM_VOCAL_FEATURES; i++) vocalInputs[i] = inputVector[VOCAL_OFFSET + i];
+  mlIn.sendInputs(vocalInputs, wekVocal);
 }
 
 // ==================================================
@@ -106,32 +109,10 @@ void handleWekinatorOutput(OscMessage m) {
   }
 }
 
-// 모델별 출력 핸들러 (1개 값 기준)
-void handleDrumOutput(OscMessage m) {
-  if (m.arguments().length >= 1) {
-    int d = constrain(round(m.get(0).floatValue()), 0, 2);
-    handleWekinatorOutputValues(d, guitarGenre, vocalGenre);
-  }
-}
-
-void handleGuitarOutput(OscMessage m) {
-  if (m.arguments().length >= 1) {
-    int g = constrain(round(m.get(0).floatValue()), 0, 2);
-    handleWekinatorOutputValues(drumGenre, g, vocalGenre);
-  }
-}
-
-void handleVocalOutput(OscMessage m) {
-  if (m.arguments().length >= 1) {
-    int v = constrain(round(m.get(0).floatValue()), 0, 2);
-    handleWekinatorOutputValues(drumGenre, guitarGenre, v);
-  }
-}
-
 void handleWekinatorOutputValues(int d, int g, int v) {
-  drumGenre   = d;
-  guitarGenre = g;
-  vocalGenre  = v;
+  if (d >= 0) drumGenre   = d;
+  if (g >= 0) guitarGenre = g;
+  if (v >= 0) vocalGenre  = v;
 
   if (drumTrigger != null) {
     drumTrigger.trigger(drumGenre);

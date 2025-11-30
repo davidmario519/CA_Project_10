@@ -7,13 +7,20 @@ class MLOutputClient {
   }
 
   void onOsc(OscMessage m) {
-    if (!m.checkAddrPattern("/wek/outputs") || m.arguments().length < 3) return;
 
-    int drum   = constrain(round(m.get(0).floatValue()), 0, 2);
-    int guitar = constrain(round(m.get(1).floatValue()), 0, 2);
-    int vocal  = constrain(round(m.get(2).floatValue()), 0, 2);
+    if (!m.checkAddrPattern("/wek/outputs")) return;
 
-    if (listener != null) listener.onWekinatorOutput(drum, guitar, vocal);
+    // 단일 output 이므로 arg 하나만 받으면 된다.
+    if (m.arguments().length < 1) return;
+
+    int drum = constrain(round(m.get(0).floatValue()), 0, 2);
+
+    println("WEK OUT (single model): ", drum);
+
+    if (listener != null) {
+      // 나머지는 dummy placeholder
+      listener.onWekinatorOutput(drum, -1, -1);
+    }
   }
 }
 
