@@ -1,23 +1,19 @@
 // ==============================================
 // 6_CA_Project_10.pde — MAIN ENTRY
-// 전체 실행 흐름 컨트롤
+// Using WekiInputHelper (input helper)
 // ==============================================
 
 import oscP5.*;
 import netP5.*;
+import wekinator.*;
 import processing.sound.*;
 
-OscP5 osc;
-NetAddress wekDrum;
-NetAddress wekGuitar;
-NetAddress wekVocal;
+WekiInputHelper helper;   // Wekinator input helper
+OscP5 osc;                // For OUTPUT only
 
-// Layer Classes
-MotionReceiver motion;
-DrumTrigger drumTrigger;
-MLOutputClient mlOut;
+MotionReceiver motion;    // Raw sensor → feature 계산
+DrumTrigger drumTrigger;  // Output trigger
 
-// Font
 PFont kor;
 
 // ----------------------------------------------
@@ -26,81 +22,83 @@ PFont kor;
 void setup() {
 
   size(900, 600);
-
   kor = createFont("DXPnM-KSCpc-EUC-H.ttf", 24, true);
   textFont(kor);
+  surface.setTitle("Trio Loop Machine – WekiInputHelper Mode");
 
-  surface.setTitle("Trio Loop Machine – MAIN");
+  // 1) OUTPUT 수신 포트 먼저 열기
+  //    → adresses: /wek/outputs
+  osc = new OscP5(this, 9000);
 
-  // Drum 사운드 트리거
-  drumTrigger = new DrumTrigger(this);
+  // 2) iPhone에서 보내는 raw 센서 포트(4886)를 helper가 수신
+  helper = new WekiInputHelper(this, 4886);
 
-  // Wekinator Output 리스너 (드럼/기타/보컬 모두 갱신)
-  mlOut = new MLOutputClient(new MLOutputListener() {
-    public void onWekinatorOutput(int drum, int g, int v) {
-      handleWekinatorOutputValues(drum, g, v);
-    }
-  });
+  // 3) helper에 입력(feature) 5개 등록
+  helper.addInput("force");
+  helper.addInput("gyroSwing");
+  helper.addInput("shake");
+  helper.addInput("smooth");
+  helper.addInput("gravity");
 
-  // MotionReceiver 생성
+  // 4) raw 센서 클래스
   motion = new MotionReceiver();
 
-  // OSC 수신 (MotionSender + 모든 Wekinator 출력 동일 포트 4886)
-  osc = new OscP5(this, 4886);
+  // 5) 사운드 트리거 (output listener)
+  drumTrigger = new DrumTrigger(this);
 
-  // Wekinator 입력 포트 (드럼/기타/보컬 개별)
-  wekDrum   = new NetAddress("127.0.0.1", 6448);
-  wekGuitar = new NetAddress("127.0.0.1", 6450);
-  wekVocal  = new NetAddress("127.0.0.1", 6452);
-
-  // Controller 초기화
-  mlIn = new MLInputClient(osc);
-  initInputVector();
+  println("=== WekiInputHelper Mode Ready ===");
 }
 
 // ----------------------------------------------
 // draw()
 // ----------------------------------------------
 void draw() {
-
   background(20);
 
-  // Input Layer → Feature Layer
-  updateFeaturesFromSensors();
+  // 1) raw sensor → feature 계산
+  float force   = motion.getForce();
+  float gyro    = motion.getGyroSwing();
+  float shake   = motion.getShakeComplexity();
+  float smooth  = motion.getSmoothness();
+  float gravity = motion.getGravityTilt();
 
-  // Send to Wekinator
-  sendInputsToWekinator();
+  // 2) helper에 feature 값을 보내기 (이게 핵심!)
+  helper.setInputValue(0, force);
+  helper.setInputValue(1, gyro);
+  helper.setInputValue(2, shake);
+  helper.setInputValue(3, smooth);
+  helper.setInputValue(4, gravity);
 
-  // Debug
-  drawDebugUI();
+  // 3) Wekinator로 입력 전송
+  helper.sendInputs();
+
+  // 4) 디버그 UI
+  fill(255);
+  text("Force: " + nfs(force,1,3), 30,80);
+  text("GyroSwing: " + nfs(gyro,1,3), 30,110);
+  text("Shake: " + nfs(shake,1,3), 30,140);
+  text("Smooth: " + nfs(smooth,1,3), 30,170);
+  text("Gravity: " + nfs(gravity,1,3), 30,200);
 }
 
 // ----------------------------------------------
-// OSC Event Handler
+// OSC Event – receive Wekinator output
 // ----------------------------------------------
 void oscEvent(OscMessage m) {
 
-  String addr = m.addrPattern();
-
-  // 1) Smartphone MotionSender (raw sensor)
-  if (addr.equals("/accel") || addr.equals("/gyro") || addr.equals("/gravity")) {
+  // iPhone raw 센서
+  if (m.checkAddrPattern("/accel") ||
+      m.checkAddrPattern("/gyro") ||
+      m.checkAddrPattern("/gravity")) {
     motion.onOsc(m);
     return;
   }
 
-  // 2) Wekinator input 에코/컨트롤 무시
-  if (addr.equals("/wek/inputs")) return;
-  if (addr.startsWith("/wekinator/control")) return;
-
-  // 3) Wekinator OUTPUT (모델별 주소 포함)
-  if (addr.equals("/wek/outputs") ||
-      addr.equals("/wek/drum_out") ||
-      addr.equals("/wek/guitar_out") ||
-      addr.equals("/wek/vocal_out")) {
-    mlOut.onOsc(m);
+  // Wekinator output
+  if (m.checkAddrPattern("/wek/outputs")) {
+    drumTrigger.onOsc(m);
     return;
   }
 
-  // 4) Debugging
-  println("RX", addr, m.arguments().length);
+  println("RX", m.addrPattern(), m.arguments().length);
 }

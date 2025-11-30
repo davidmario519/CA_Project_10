@@ -1,140 +1,141 @@
 // =========================================
-// 6_Main_Controller.pde
-// 전체 파이프라인 Controller
-// - feature vector
-// - ML input/output
-// - Debug UI
+// 6_Main_Controller (WekiInputHelper 기반)
 // =========================================
 
-// ========== ML 입력 개수 설정 ==========
-final int NUM_DRUM_FEATURES   = 5;   // force, gyro, shake, smooth, gravity
-final int NUM_GUITAR_FEATURES = 4;   // Mediapipe 4개
-final int NUM_VOCAL_FEATURES  = 4;   // FaceOSC 4개 (추후 추가)
+import wekinator.*;
+import oscP5.*;
+import netP5.*;
 
-final int NUM_INPUTS =
-  NUM_DRUM_FEATURES +
-  NUM_GUITAR_FEATURES +
-  NUM_VOCAL_FEATURES;
+OscP5 osc;
+WekiInputHelper weki;
 
-// Offset
-final int DRUM_OFFSET   = 0;
-final int GUITAR_OFFSET = DRUM_OFFSET + NUM_DRUM_FEATURES;
-final int VOCAL_OFFSET  = GUITAR_OFFSET + NUM_GUITAR_FEATURES;
+// Output ports
+final int PORT_DRUM_OUT   = 9000;
+final int PORT_GUITAR_OUT = 9001;
+final int PORT_VOCAL_OUT  = 9002;
 
-// Input vector (전체 ML 입력)
-float[] inputVector = new float[NUM_INPUTS];
-MLInputClient mlIn;
-
-// Wekinator Output (genre)
-int drumGenre   = 0;
+// Genres
+int drumGenre = 0;
 int guitarGenre = 0;
-int vocalGenre  = 0;
+int vocalGenre = 0;
 
 String[] GENRE_NAMES = { "Jazz", "HipHop", "Cinematic" };
 
-// ==================================================
-// 초기화
-// ==================================================
-void initInputVector() {
-  for (int i = 0; i < NUM_INPUTS; i++) inputVector[i] = 0;
+// ----------------------------------------
+// setup()
+// ----------------------------------------
+void setup() {
+
+  size(900, 600);
+  background(0);
+
+  // 1) RAW 수신 포트
+  int RAW_PORT = 4886;
+
+  // 2) Helper 시작
+  weki = new WekiInputHelper(this, RAW_PORT);
+
+  // RAW 입력 등록
+  weki.addIncomingOSC("/accel",   "ax", "ay", "az");
+  weki.addIncomingOSC("/gyro",    "gx", "gy", "gz");
+  weki.addIncomingOSC("/gravity", "rx", "ry", "rz");
+
+  // Helper가 계산해서 만들 feature 5개
+  weki.addInput("force");
+  weki.addInput("gyro");
+  weki.addInput("shake");
+  weki.addInput("smooth");
+  weki.addInput("tilt");
+
+  // Wekinator input 포트 = 단 1개!
+  weki.setWekinatorHost("127.0.0.1", 6448);
+
+  // Wekinator output 수신
+  osc = new OscP5(this, PORT_DRUM_OUT);
+  osc.plug(this, "onDrumOut",   "/drumOut");
+
+  osc.plug(this, "onGuitarOut", "/guitarOut");
+  osc.startListening(PORT_GUITAR_OUT);
+
+  osc.plug(this, "onVocalOut", "/vocalOut");
+  osc.startListening(PORT_VOCAL_OUT);
 }
 
-// ==================================================
-// 센서값 → Feature Vector 업데이트
-// ==================================================
-void updateFeaturesFromSensors() {
+// ----------------------------------------
+// draw() — feature 계산 + Helper 전송
+// ----------------------------------------
+void draw() {
 
-  // -------------------------
-  // Drum Features (MotionReceiver 기반)
-  // -------------------------
+  background(20);
 
-  // 0~1 정규화 후 전송 (Wekinator 학습 안정화)
-float forceNorm = constrain(motion.getForce() / 2.0, 0, 1);  // 기존 /5
-float gyroNorm  = constrain(motion.getGyroSwing() / 10.0, 0, 1); // 기존 /20
-float shakeNorm = constrain(motion.getShakeComplexity(), 0, 1);
-float smoothNorm = constrain(motion.getSmoothness(), 0, 1);
-float gravityNorm = constrain(motion.getGravityTilt(), 0, 1);
-println("feat norm", forceNorm, gyroNorm, shakeNorm, smoothNorm, gravityNorm);
+  updateFeatures();
+  weki.sendInputs();
 
-
-  inputVector[DRUM_OFFSET + 0] = forceNorm;
-  inputVector[DRUM_OFFSET + 1] = gyroNorm;
-  inputVector[DRUM_OFFSET + 2] = shakeNorm;
-  inputVector[DRUM_OFFSET + 3] = smoothNorm;
-  inputVector[DRUM_OFFSET + 4] = gravityNorm;
-
-  // -------------------------
-  // Guitar Features → (추후 Mediapipe 파일에서 업데이트)
-  // -------------------------
-  // inputVector[GUARD_OFFSET + 0~3] ...
-
-  // -------------------------
-  // Vocal Features → (FaceOSC 입력 후 업데이트)
-  // -------------------------
-  // inputVector[VOCAL_OFFSET + 0~3] ...
+  drawDebugUI();
 }
 
-// ==================================================
-// Wekinator로 Input 전송
-// ==================================================
-void sendInputsToWekinator() {
+// ----------------------------------------
+// RAW → Feature 계산
+// ----------------------------------------
+void updateFeatures() {
 
-  // 드럼 5개
-  float[] drumInputs = new float[NUM_DRUM_FEATURES];
-  for (int i = 0; i < NUM_DRUM_FEATURES; i++) drumInputs[i] = inputVector[DRUM_OFFSET + i];
-  mlIn.sendInputs(drumInputs, wekDrum);
+  float ax = weki.getValue("ax");
+  float ay = weki.getValue("ay");
+  float az = weki.getValue("az");
 
-  // 기타 4개 (값 준비되면 업데이트)
-  float[] guitarInputs = new float[NUM_GUITAR_FEATURES];
-  for (int i = 0; i < NUM_GUITAR_FEATURES; i++) guitarInputs[i] = inputVector[GUITAR_OFFSET + i];
-  mlIn.sendInputs(guitarInputs, wekGuitar);
+  float gx = weki.getValue("gx");
+  float gy = weki.getValue("gy");
+  float gz = weki.getValue("gz");
 
-  // 보컬 4개 (값 준비되면 업데이트)
-  float[] vocalInputs = new float[NUM_VOCAL_FEATURES];
-  for (int i = 0; i < NUM_VOCAL_FEATURES; i++) vocalInputs[i] = inputVector[VOCAL_OFFSET + i];
-  mlIn.sendInputs(vocalInputs, wekVocal);
+  float rx = weki.getValue("rx");
+
+  // Feature definitions
+  float force =   (abs(ax)+abs(ay)+abs(az)) / 4.0;
+  float gyro  =   (abs(gx)+abs(gy)+abs(gz)) / 12.0;
+  float shake =   abs(ax - ay) * 0.3;
+  float smooth =  1.0 - shake;
+  float tilt   =  abs(rx) / 9.8;
+
+  weki.setInput("force", constrain(force,0,1));
+  weki.setInput("gyro", constrain(gyro,0,1));
+  weki.setInput("shake", constrain(shake,0,1));
+  weki.setInput("smooth", constrain(smooth,0,1));
+  weki.setInput("tilt", constrain(tilt,0,1));
 }
 
-// ==================================================
-// Wekinator Output 처리
-// ==================================================
-void handleWekinatorOutput(OscMessage m) {
-
-  if (m.arguments().length >= 3) {
-
-    int d = constrain(round(m.get(0).floatValue()), 0, 2);
-    int g = constrain(round(m.get(1).floatValue()), 0, 2);
-    int v = constrain(round(m.get(2).floatValue()), 0, 2);
-    handleWekinatorOutputValues(d, g, v);
-  }
+// ----------------------------------------
+// Output handlers
+// ----------------------------------------
+public void onDrumOut(float v) {
+  drumGenre = round(v);
+  println("DRUM →", drumGenre);
 }
 
-void handleWekinatorOutputValues(int d, int g, int v) {
-  if (d >= 0) drumGenre   = d;
-  if (g >= 0) guitarGenre = g;
-  if (v >= 0) vocalGenre  = v;
-
-  if (drumTrigger != null) {
-    drumTrigger.trigger(drumGenre);
-  }
+public void onGuitarOut(float v) {
+  guitarGenre = round(v);
+  println("GUITAR →", guitarGenre);
 }
 
-// ==================================================
+public void onVocalOut(float v) {
+  vocalGenre = round(v);
+  println("VOCAL →", vocalGenre);
+}
+
+// ----------------------------------------
 // Debug UI
-// ==================================================
+// ----------------------------------------
 void drawDebugUI() {
+
   fill(255);
-  textSize(18);
-  textAlign(LEFT);
+  textSize(20);
 
-  text("=== Trio Loop ML Debug ===", 30, 20);
+  text("force   : " + nf(weki.getInput("force"),1,4), 30, 80);
+  text("gyro    : " + nf(weki.getInput("gyro"),1,4), 30, 110);
+  text("shake   : " + nf(weki.getInput("shake"),1,4), 30, 140);
+  text("smooth  : " + nf(weki.getInput("smooth"),1,4), 30, 170);
+  text("tilt    : " + nf(weki.getInput("tilt"),1,4), 30, 200);
 
-  text("Drum Features:", 30, 70);
-  text("Force: "           + nf(inputVector[0],1,4), 60, 100);
-  text("GyroSwing: "       + nf(inputVector[1],1,4), 60, 130);
-  text("ShakeComplexity: " + nf(inputVector[2],1,4), 60, 160);
-  text("Smoothness: "      + nf(inputVector[3],1,4), 60, 190);
-  text("GravityTilt: "     + nf(inputVector[4],1,4), 60, 220);
-
-  text("Drum Genre Output: " + GENRE_NAMES[drumGenre], 30, 260);
+  text("DRUM OUT: " + GENRE_NAMES[drumGenre], 30, 260);
+  text("GUITAR OUT: " + guitarGenre, 30, 290);
+  text("VOCAL OUT: " + vocalGenre, 30, 320);
 }

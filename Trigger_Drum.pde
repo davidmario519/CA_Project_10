@@ -1,6 +1,5 @@
 // ==============================================
 // DrumTrigger.pde
-// Wekinator Drum 장르(0=Jazz,1=HipHop,2=Cinematic)별로 샘플 재생
 // ==============================================
 
 class DrumTrigger {
@@ -8,26 +7,36 @@ class DrumTrigger {
   SoundFile jazz;
   SoundFile hiphop;
   SoundFile cinematic;
+
   int lastGenre = -1;
 
   DrumTrigger(PApplet app) {
-    jazz = new SoundFile(app, "src/sound src/jazz/jazz drum.mp3");
-    hiphop = new SoundFile(app, "src/sound src/hiphop/hiphop drum.mp3");
+
+    jazz      = new SoundFile(app, "src/sound src/jazz/jazz drum.mp3");
+    hiphop    = new SoundFile(app, "src/sound src/hiphop/hiphop drum.mp3");
     cinematic = new SoundFile(app, "src/sound src/cinematic/cinematic drum.mp3");
+
+    println("[DrumTrigger] Ready");
   }
 
-  void trigger(int genre) {
-    if (genre == lastGenre) return; // 같은 장르 반복 재생 방지
-    lastGenre = genre;
-    stopAll();
+  void onOsc(OscMessage m) {
+    if (!m.checkAddrPattern("/wek/outputs")) return;
+    if (m.arguments().length < 1) return;
 
-    if (genre == 0 && jazz != null) {
-      jazz.play();
-    } else if (genre == 1 && hiphop != null) {
-      hiphop.play();
-    } else if (genre == 2 && cinematic != null) {
-      cinematic.play();
-    }
+    int genre = constrain(round(m.get(0).floatValue()), 0, 2);
+    println("[OUTPUT] Drum genre =", genre);
+
+    trigger(genre);
+  }
+
+  void trigger(int g) {
+    if (g == lastGenre) return;
+    lastGenre = g;
+
+    stopAll();
+    if (g == 0) jazz.play();
+    else if (g == 1) hiphop.play();
+    else if (g == 2) cinematic.play();
   }
 
   void stopAll() {

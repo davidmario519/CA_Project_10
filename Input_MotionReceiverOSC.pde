@@ -60,17 +60,12 @@ class MotionReceiver {
     }
 
     // Debug log
-    println("[OSC] " + m.addrPattern() + " -> "
-       + nf(ax,1,3) + ","
-       + nf(ay,1,3) + ","
-       + nf(az,1,3) + " | "
-       + nf(gx,1,3) + ","
-       + nf(gy,1,3) + ","
-       + nf(gz,1,3) + " | "
-       + nf(pitch,1,3) + ","
-       + nf(roll,1,3) + ","
-       + nf(yaw,1,3)
-    );
+    if (frameCount % 30 == 0) {
+      println("[OSC]", m.addrPattern(), 
+              "ACC:", ax, ay, az,
+              "GYRO:", gx, gy, gz,
+              "ATT:", pitch, roll, yaw);
+    }
   }
 
   // =======================================================
