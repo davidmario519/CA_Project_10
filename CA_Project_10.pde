@@ -27,11 +27,11 @@ int vocalGenre = 0;
 String[] GENRE_NAMES = { "Jazz", "HipHop", "Cinematic" };
 
 // Wekinator 출력 시작값: 보통 1(1,2,3)이나 환경에 따라 0 또는 2일 수 있음
-int WEK_BASE_VALUE = 1; // 필요 시 0 또는 2로 조정
 final int FACE_OSC_PORT = 8338;
 final int HAND_OSC_PORT = 7000;
 boolean FACE_DEBUG = false;
 boolean HAND_DEBUG = false;
+boolean VOCAL_DEBUG = true;   // Vocal 파이프라인 디버그 로그
 
 // Audio triggers
 DrumTrigger drumTrigger;
@@ -171,103 +171,36 @@ void updateAndSendGuitarInputs() {
 }
 
 // =======================================================
-// 3 Output Handlers
-// =======================================================
-// ===========================
-// DRUM Output 안정화 (25프레임 버퍼)
-// ===========================
-int currentDrum = 0;
-int pendingDrum = 0;
-int pendingDrumCount = 0;
-int drumThreshold = 25;
-
+// 3 Output Handlers (경량 래퍼: 안정화/매핑은 Trigger 클래스에 위임)
 public void onDrumOut(float v) {
-  int raw = mapWekOutputToIndex(v);   // base 값 보정 후 0-based
-
-  if (raw == pendingDrum) {
-    pendingDrumCount++;
-    if (pendingDrumCount >= drumThreshold) {
-      if (raw != currentDrum) {
-        currentDrum = raw;
-        println("[DRUM CONFIRMED] → " + genreLabel(currentDrum));
-        if (drumTrigger != null) drumTrigger.trigger(currentDrum);
-      }
-    }
-  } else {
-    pendingDrum = raw;
-    pendingDrumCount = 1;
+  if (drumTrigger != null) {
+    drumTrigger.onOsc(v);
+    drumGenre = drumTrigger.getCurrentGenre();
   }
-
-  drumGenre = currentDrum;
 }
-
-// ===========================
-// GUITAR Output 안정화 (25프레임 버퍼)
-// ===========================
-int currentGuitar = 0;
-int pendingGuitar = 0;
-int pendingGuitarCount = 0;
-int guitarThreshold = 25;
 
 public void onGuitarOut(float v) {
-  int raw = mapWekOutputToIndex(v);
-
-  if (raw == pendingGuitar) {
-    pendingGuitarCount++;
-    if (pendingGuitarCount >= guitarThreshold) {
-      if (raw != currentGuitar) {
-        currentGuitar = raw;
-        println("[GUITAR CONFIRMED] → " + genreLabel(currentGuitar));
-        if (guitarTrigger != null) guitarTrigger.trigger(currentGuitar);
-      }
-    }
-  } else {
-    pendingGuitar = raw;
-    pendingGuitarCount = 1;
+  if (guitarTrigger != null) {
+    guitarTrigger.onOsc(v);
+    guitarGenre = guitarTrigger.getCurrentGenre();
   }
-
-  guitarGenre = currentGuitar;
 }
 
-// ===========================
-// VOCAL Output 안정화 (25프레임 버퍼)
-// ===========================
-int currentVocal = 0;
-int pendingVocal = 0;
-int pendingVocalCount = 0;
-int vocalThreshold = 25;
-
-public void onVocalOut(float v) {
-  int raw = mapWekOutputToIndex(v);
-
-  if (raw == pendingVocal) {
-    pendingVocalCount++;
-    if (pendingVocalCount >= vocalThreshold) {
-      if (raw != currentVocal) {
-        currentVocal = raw;
-        println("[VOCAL CONFIRMED] → " + genreLabel(currentVocal));
-        if (vocalTrigger != null) vocalTrigger.trigger(currentVocal);
-      }
+public void onVocalOut(float classifierVal, float continuousVal) {
+  if (vocalTrigger != null) {
+    if (VOCAL_DEBUG) {
+      println("[VOCAL OUT RAW] cls=" + classifierVal + " cont=" + continuousVal);
     }
-  } else {
-    pendingVocal = raw;
-    pendingVocalCount = 1;
+    vocalTrigger.onOsc(classifierVal, continuousVal);
+    vocalGenre = vocalTrigger.getCurrentGenre();
+    if (VOCAL_DEBUG) {
+      println("[VOCAL STATE] current=" + genreLabel(vocalGenre));
+    }
   }
-
-  vocalGenre = currentVocal;
-}
-
-// Guard against invalid indexes coming from OSC
-int clampGenreIndex(int value) {
-  return constrain(value, 0, GENRE_NAMES.length - 1);
-}
-
-int mapWekOutputToIndex(float v) {
-  int zeroBased = round(v) - WEK_BASE_VALUE; // base 값을 빼서 0-based로 변환
-  return clampGenreIndex(zeroBased);
 }
 
 String genreLabel(int idx) {
+  if (idx == -1) return "Rest";
   if (idx < 0 || idx >= GENRE_NAMES.length) return "Unknown";
   return GENRE_NAMES[idx];
 }
