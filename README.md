@@ -24,7 +24,7 @@ pip install opencv-python mediapipe numpy python-osc
 
 ## Hand Tracking → Wekinator
 - 실행: `python hand_tracking_osc.py`
-- 기능: 양손 검출 후 `/hand/features`로 4개 값 전송 `[Width, Height, CenterX, CenterY]`
+- 기능: 126개 데이터 전송
 - 기본 OSC 대상: `127.0.0.1:7000` (Processing에서 수신 → Wekinator로 중계). 다른 머신이면 `hand_tracking_osc.py` 상단의 `IP`, `PORT` 수정.
 - macOS에서 카메라 권한 요청 시 허용 필요.
 

@@ -40,6 +40,7 @@ DrumTrigger drumTrigger;
 GuitarTrigger guitarTrigger;
 VocalTrigger vocalTrigger;
 TimeQuantizer loopQuantizer;
+InstrumentVisualizerWindow visWindow;
 
 // FaceOSC 입력 + feature
 FaceReceiver faceReceiver;
@@ -88,6 +89,11 @@ void setup() {
 
   // 박자 정렬 루프 매니저
   loopQuantizer = new TimeQuantizer(this, GENRE_NAMES);
+
+  // 시각화 보조 창 실행
+  visWindow = new InstrumentVisualizerWindow();
+  String[] args = { "InstrumentVisualizerWindow" };
+  PApplet.runSketch(args, visWindow);
 }
 
 void draw() {
@@ -187,6 +193,9 @@ public void onDrumOut(float v) {
     if (loopQuantizer != null && drumGenre >= 0 && drumGenre != prev) {
       loopQuantizer.queueClip(0, drumGenre);
     }
+    if (visWindow != null && drumGenre >= 0 && drumGenre != prev) {
+      visWindow.setDrum(drumGenre);
+    }
   }
 }
 
@@ -201,6 +210,9 @@ public void onGuitarOut(float classifierVal, float genreVal) {
     if (loopQuantizer != null && guitarGenre >= 0 && guitarGenre != prev) {
       loopQuantizer.queueClip(1, guitarGenre);
     }
+    if (visWindow != null && guitarGenre >= 0 && guitarGenre != prev) {
+      visWindow.setGuitar(guitarGenre);
+    }
   }
 }
 
@@ -214,6 +226,9 @@ public void onVocalOut(float classifierVal, float continuousVal) {
     vocalGenre = vocalTrigger.getCurrentGenre();
     if (loopQuantizer != null && vocalGenre >= 0 && vocalGenre != prev) {
       loopQuantizer.queueClip(2, vocalGenre);
+    }
+    if (visWindow != null && vocalGenre >= 0 && vocalGenre != prev) {
+      visWindow.setVocal(vocalGenre);
     }
     if (VOCAL_DEBUG) {
       println("[VOCAL STATE] current=" + genreLabel(vocalGenre));
