@@ -1,25 +1,28 @@
 // ==============================================
 // Input_MPReceiverOSC.pde
-// MediaPipe → Processing용 손 특징 4개 수신
-// 기대 주소: "/hand/features" with [width, height, centerX, centerY]
+// MediaPipe → Processing용 손 특징 126개 수신
+// 기대 주소: "/hand/features" with 126 floats
 // ==============================================
 
 class MPHandReceiver {
 
-  float width = 0;
-  float height = 0;
-  float centerX = 0;
-  float centerY = 0;
+  float[] features = new float[126]; // 126개의 float 데이터를 저장할 배열
   boolean hasData = false;
 
   void onOsc(OscMessage m) {
     if (!m.checkAddrPattern("/hand/features")) return;
-    if (m.arguments() == null || m.arguments().length < 4) return;
+    
+    // 126개의 인자가 모두 들어왔는지 확인
+    if (m.arguments() == null || m.arguments().length < 126) {
+      //println("Warning: Received OSC message with < 126 arguments at /hand/features");
+      return;
+    }
 
-    width   = m.get(0).floatValue();
-    height  = m.get(1).floatValue();
-    centerX = m.get(2).floatValue();
-    centerY = m.get(3).floatValue();
+    // 126개 float 값을 배열에 저장
+    for (int i = 0; i < 126; i++) {
+      features[i] = m.get(i).floatValue();
+    }
+    
     hasData = true;
   }
 }

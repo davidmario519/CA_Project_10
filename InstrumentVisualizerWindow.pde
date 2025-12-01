@@ -6,6 +6,12 @@ import ddf.minim.analysis.*;
 // CA_Project_10.pde의 장르 변화를 받아 트랙을 교체한다.
 class InstrumentVisualizerWindow extends PApplet {
 
+  String dataPath;
+
+  InstrumentVisualizerWindow(String dataPath) {
+    this.dataPath = dataPath;
+  }
+
   // DRUM
   SoundFile drumFunk, drumHiphop, drumJazz;
   SoundFile currentDrum;
@@ -22,7 +28,7 @@ class InstrumentVisualizerWindow extends PApplet {
   // GUITAR
   Minim minim;
   AudioPlayer guitar;
-  String[] guitarTracks = { "jazz guitar.mp3", "hiphop guitar.mp3", "funk guitar.mp3" };
+  String[] guitarTracks = { "jazz_guitar.mp3", "hiphop_guitar.mp3", "funk_guitar.mp3" };
   int guitarTrackIndex = 0;
   color[][] guitarPalettes;
   color[] guitarColors;
@@ -30,7 +36,7 @@ class InstrumentVisualizerWindow extends PApplet {
 
   // VOCAL
   AudioPlayer vocal;
-  String[] vocalTracks = { "jazz vocal.mp3", "hiphop vocal.mp3", "funk vocal.mp3" };
+  String[] vocalTracks = { "jazz_vocal.mp3", "hiphop_vocal.mp3", "funk_vocal.mp3" };
   int vocalTrackIndex = 0;
   color[][] vocalPalettes;
   color[] vocalColors;
@@ -50,9 +56,9 @@ class InstrumentVisualizerWindow extends PApplet {
     background(bg);
 
     // DRUM INIT
-    drumFunk = new SoundFile(this, "data/funk drum.mp3");
-    drumHiphop    = new SoundFile(this, "data/hiphop drum.mp3");
-    drumJazz      = new SoundFile(this, "data/jazz drum.mp3");
+    drumFunk = new SoundFile(this, "funk_drum.mp3");
+    drumHiphop    = new SoundFile(this, "hiphop_drum.mp3");
+    drumJazz      = new SoundFile(this, "jazz_drum.mp3");
     currentDrum = drumJazz;
     if (currentDrum != null) {
       currentDrum.loop();
@@ -190,7 +196,7 @@ class InstrumentVisualizerWindow extends PApplet {
   void loadGuitar(int index) {
     if (index < 0 || index >= guitarTracks.length) return;
     if (guitar != null) guitar.close();
-    guitar = minim.loadFile("data/" + guitarTracks[index], 2048);
+    guitar = minim.loadFile(dataPath + "/" + guitarTracks[index], 2048);
     if (guitar != null) {
       guitar.loop();
       guitarColors = guitarPalettes[index];
@@ -202,7 +208,7 @@ class InstrumentVisualizerWindow extends PApplet {
   void loadVocal(int index) {
     if (index < 0 || index >= vocalTracks.length) return;
     if (vocal != null) vocal.close();
-    vocal = minim.loadFile("data/" + vocalTracks[index], 2048);
+    vocal = minim.loadFile(dataPath + "/" + vocalTracks[index], 2048);
     if (vocal != null) {
       vocal.loop();
       vocalColors = vocalPalettes[index];

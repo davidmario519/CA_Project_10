@@ -24,13 +24,13 @@ int drumGenre = -1;
 int guitarGenre = -1;
 int vocalGenre = -1;
 
-String[] GENRE_NAMES = { "Jazz", "HipHop", "Cinematic" };
+String[] GENRE_NAMES = { "Jazz", "HipHop", "Funk" };
 
 // Wekinator 출력 시작값: 보통 1(1,2,3)이나 환경에 따라 0 또는 2일 수 있음
 final int FACE_OSC_PORT = 8338;
 final int HAND_OSC_PORT = 7000;
 boolean FACE_DEBUG = false;
-boolean HAND_DEBUG = false;
+boolean HAND_DEBUG = true;
 boolean VOCAL_DEBUG = true;   // Vocal 파이프라인 디버그 로그
 boolean GUITAR_DEBUG = true;  // Guitar 파이프라인 디버그 로그
 boolean LOOP_DEBUG = true;    // 루프/퀀타이저 로딩/큐잉 로그
@@ -73,7 +73,9 @@ void setup() {
   new OscP5(this, 9000).plug(this, "onDrumOut",   "/drumOut");
   new OscP5(this, 9001).plug(this, "onGuitarOut", "/guitarOut");
   new OscP5(this, 9002).plug(this, "onVocalOut",  "/vocalOut");
+  
   faceOsc = new OscP5(this, FACE_OSC_PORT); // FaceOSC 입력
+  
   handOsc = new OscP5(this, HAND_OSC_PORT); // MediaPipe 손 입력
 
   faceReceiver = new FaceReceiver();
@@ -91,7 +93,7 @@ void setup() {
   loopQuantizer = new TimeQuantizer(this, GENRE_NAMES);
 
   // 시각화 보조 창 실행
-  visWindow = new InstrumentVisualizerWindow();
+  visWindow = new InstrumentVisualizerWindow(dataPath(""));
   String[] args = { "InstrumentVisualizerWindow" };
   PApplet.runSketch(args, visWindow);
 }
@@ -124,9 +126,11 @@ void oscEvent(OscMessage m) {
     }
   }
 
+  // Pass messages to the appropriate receivers
   if (faceReceiver != null) faceReceiver.onOsc(m);
   if (handReceiver != null) handReceiver.onOsc(m);
 }
+
 
 // =======================================================
 // 스마트폰 → Drum Wekinator 전송

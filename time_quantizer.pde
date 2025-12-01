@@ -35,7 +35,7 @@ class TimeQuantizer {
     int idx = 0;
     for (int g = 0; g < genreKeys.length; g++) {
       for (int c = 0; c < instKeys.length; c++) {
-        String path = "data/" + genreKeys[g] + " " + instKeys[c] + ".mp3";
+        String path = genreKeys[g] + "_" + instKeys[c] + ".mp3";
         String display = genreNames[g] + " " + instShort[c];
         int len = lengths[g][c];
         clips[idx] = new Clip(app, path, len, display, c, g, idx);
