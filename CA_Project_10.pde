@@ -3,9 +3,12 @@
 // MotionReceiver 제거 + 스마트폰 벡터 자동 수신
 // =======================================================
 
-import processing.sound.*;
+import processing.sound.SoundFile;
+import processing.sound.Amplitude;
 import oscP5.*;
 import netP5.*;
+import ddf.minim.*;
+import ddf.minim.analysis.*;
 
 // OSC
 OscP5 oscIn;
@@ -56,6 +59,16 @@ float[] guitarInputs = new float[0];
 OscP5 faceOsc;
 OscP5 handOsc;
 
+// Visualizers
+CombinedVisualizer comboViz;
+Minim vizMinim;
+AudioPlayer vizVocal;
+AudioPlayer vizGuitar;
+ddf.minim.analysis.FFT vizVocalFFT;
+SoundFile vizDrum;
+Amplitude vizDrumAmp;
+processing.sound.FFT vizDrumFFT;
+
 void setup() {
   size(900, 600);
   pixelDensity(1);   // 고해상도 경고 제거
@@ -84,6 +97,22 @@ void setup() {
   handReceiver = new MPHandReceiver();
   handFeatures = new MPFeatureExtractor(handReceiver);
 
+  // Visualizer audio (jazz defaults)
+  vizMinim = new Minim(this);
+  vizVocal = vizMinim.loadFile("jazz vocal.mp3", 2048);
+  vizGuitar = vizMinim.loadFile("jazz guitar.mp3", 2048);
+  if (vizVocal != null) vizVocal.loop();
+  if (vizGuitar != null) vizGuitar.loop();
+  if (vizVocal != null) vizVocalFFT = new ddf.minim.analysis.FFT(vizVocal.bufferSize(), vizVocal.sampleRate());
+
+  vizDrum = new SoundFile(this, "jazz drum.mp3");
+  vizDrum.loop();
+  vizDrumAmp = new Amplitude(this);
+  vizDrumAmp.input(vizDrum);
+  vizDrumFFT = new processing.sound.FFT(this, 512);
+  vizDrumFFT.input(vizDrum);
+  comboViz = new CombinedVisualizer(this);
+
   // Prepare audio triggers
   drumTrigger   = new DrumTrigger(this);
   guitarTrigger = new GuitarTrigger(this);
@@ -99,12 +128,20 @@ void setup() {
 }
 
 void draw() {
-  background(20);
+  background(0);
+  drawVisuals();
   sendDrumInputs();
   updateAndSendVocalInputs();
   updateAndSendGuitarInputs();
   if (loopQuantizer != null) loopQuantizer.update();
   drawDebug();
+}
+
+void drawVisuals() {
+  if (comboViz == null) return;
+  float drumAmpVal = vizDrumAmp != null ? vizDrumAmp.analyze() : 0;
+  comboViz.drawAll(vizVocal, vizVocalFFT, vizGuitar, drumAmpVal, vizDrumFFT,
+                   vocalGenre, guitarGenre, drumGenre);
 }
 
 // =======================================================
@@ -268,15 +305,26 @@ void drawDebug() {
     text("LOOP GUITAR: " + loopQuantizer.playingLabel(1), 30, 450);
     text("LOOP VOCAL : " + loopQuantizer.playingLabel(2), 30, 480);
     text("BEAT #" + loopQuantizer.currentBeat() + " (q=" + loopQuantizer.quantization + ", bpm=" + loopQuantizer.bpm + ")", 30, 510);
-    // 오른쪽에 간단한 루프 선택 UI
-    loopQuantizer.drawUI(520, 80, 330, 300);
-    text("Click grid to queue loop (per instrument column)", 520, 410);
   }
 }
 
-// 마우스 클릭으로 루프 큐잉 UI 제어
-void mousePressed() {
+// 키로 루프 큐잉: qwe / asd / zxc
+void keyPressed() {
   if (loopQuantizer != null) {
-    loopQuantizer.handleClick(mouseX, mouseY, 520, 80, 330, 300);
+    loopQuantizer.handleKey(key);
   }
+
+  // Also update genre state for visuals when keys are used
+  char k = Character.toLowerCase(key);
+  if (k == 'q') drumGenre = 0;
+  if (k == 'w') drumGenre = 1;
+  if (k == 'e') drumGenre = 2;
+
+  if (k == 'a') guitarGenre = 0;
+  if (k == 's') guitarGenre = 1;
+  if (k == 'd') guitarGenre = 2;
+
+  if (k == 'z') vocalGenre = 0;
+  if (k == 'x') vocalGenre = 1;
+  if (k == 'c') vocalGenre = 2;
 }

@@ -130,6 +130,24 @@ class TimeQuantizer {
     return (int)((app.millis() - referenceTime) / msPerBeat);
   }
 
+  // 키보드 매핑: qwe / asd / zxc → (genre row, instrument col)
+  void handleKey(char keyChar) {
+    char k = Character.toLowerCase(keyChar);
+    char[][] map = {
+      { 'q', 'w', 'e' }, // Jazz row
+      { 'a', 's', 'd' }, // HipHop row
+      { 'z', 'x', 'c' }  // Funk row
+    };
+    for (int r = 0; r < map.length; r++) {
+      for (int c = 0; c < map[r].length; c++) {
+        if (map[r][c] == k) {
+          queueClip(c, r);
+          return;
+        }
+      }
+    }
+  }
+
   // ---------------------------------------------------
   // 간단한 그리드 UI (x,y,w,h 영역 안에 3x3 버튼)
   // ---------------------------------------------------

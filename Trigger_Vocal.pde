@@ -15,9 +15,9 @@ class VocalTrigger {
   int minActiveDuration = 500; // ms: 최소 0.5초 이상 입을 열어야 반응
 
   VocalTrigger(PApplet app) {
-    jazz      = new SoundFile(app, base + "jazz vocal.mp3");
-    hiphop    = new SoundFile(app, base + "hiphop vocal.mp3");
-    funk = new SoundFile(app, base + "funk vocal.mp3");
+    jazz      = new SoundFile(app, base + "/jazz vocal.mp3");
+    hiphop    = new SoundFile(app, base + "/hiphop vocal.mp3");
+    funk = new SoundFile(app, base + "/funk vocal.mp3");
     labels = GENRE_NAMES;
   }
 
