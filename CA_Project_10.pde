@@ -24,7 +24,7 @@ int drumGenre = -1;
 int guitarGenre = -1;
 int vocalGenre = -1;
 
-String[] GENRE_NAMES = { "Jazz", "HipHop", "Funk" };
+String[] GENRE_NAMES = { "Jazz", "HipHop", "Cinematic" };
 
 // Wekinator 출력 시작값: 보통 1(1,2,3)이나 환경에 따라 0 또는 2일 수 있음
 final int FACE_OSC_PORT = 8338;
@@ -32,6 +32,8 @@ final int HAND_OSC_PORT = 7000;
 boolean FACE_DEBUG = false;
 boolean HAND_DEBUG = false;
 boolean VOCAL_DEBUG = true;   // Vocal 파이프라인 디버그 로그
+boolean GUITAR_DEBUG = true;  // Guitar 파이프라인 디버그 로그
+boolean LOOP_DEBUG = true;    // 루프/퀀타이저 로딩/큐잉 로그
 
 // Audio triggers
 DrumTrigger drumTrigger;
@@ -188,10 +190,13 @@ public void onDrumOut(float v) {
   }
 }
 
-public void onGuitarOut(float v) {
+public void onGuitarOut(float classifierVal, float genreVal) {
   if (guitarTrigger != null) {
+    if (GUITAR_DEBUG) {
+      println("[GUITAR OUT RAW] cls=" + classifierVal + " genre=" + genreVal);
+    }
     int prev = guitarGenre;
-    guitarTrigger.onOsc(v);
+    guitarTrigger.onOsc(classifierVal, genreVal);
     guitarGenre = guitarTrigger.getCurrentGenre();
     if (loopQuantizer != null && guitarGenre >= 0 && guitarGenre != prev) {
       loopQuantizer.queueClip(1, guitarGenre);
