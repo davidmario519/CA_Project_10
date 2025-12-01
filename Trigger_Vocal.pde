@@ -15,9 +15,10 @@ class VocalTrigger {
   int minActiveDuration = 500; // ms: 최소 0.5초 이상 입을 열어야 반응
 
   VocalTrigger(PApplet app) {
-    jazz      = new SoundFile(app, base + "jazz vocal.mp3");
-    hiphop    = new SoundFile(app, base + "hiphop vocal.mp3");
-    funk = new SoundFile(app, base + "funk vocal.mp3");
+
+    jazz      = new SoundFile(app, base + "/jazz vocal.mp3");
+    hiphop    = new SoundFile(app, base + "/hiphop vocal.mp3");
+    funk = new SoundFile(app, base + "/funk vocal.mp3");
     labels = GENRE_NAMES;
   }
 
@@ -56,25 +57,17 @@ class VocalTrigger {
   void trigger(int genre) {
     if (genre == last) return;
     last = genre;
-
-    // 루프 매니저가 있으면 위임
-    if (loopQuantizer != null) {
-      stopAll();
-      loopQuantizer.queueClip(2, genre);
-      return;
-    }
-
     stopAll();
 
     if (genre == 0) jazz.play();
     else if (genre == 1) hiphop.play();
-    else if (genre == 2) funk.play();
+    else if (genre == 2) cinematic.play();
   }
 
   void stopAll() {
     if (jazz != null) jazz.stop();
     if (hiphop != null) hiphop.stop();
-    if (funk != null) funk.stop();
+    if (cinematic != null) cinematic.stop();
   }
 
   int getCurrentGenre() {
@@ -92,7 +85,7 @@ class VocalTrigger {
   int mapGenre(float v) {
     if (v >= 0.15 && v <= 0.35) return 0; // Jazz ~0.25
     if (v >= 0.40 && v <= 0.60) return 1; // HipHop ~0.50
-    if (v >= 0.65 && v <= 0.85) return 2; // Funk ~0.75
+    if (v >= 0.65 && v <= 0.85) return 2; // Cinematic ~0.75
     return UNKNOWN;
   }
 
