@@ -16,15 +16,9 @@ class GuitarTrigger {
   static final int ACTIVE = 10;
 
   GuitarTrigger(PApplet app) {
-<<<<<<< HEAD
-    jazz      = new SoundFile(app, "jazz_guitar.mp3");
-    hiphop    = new SoundFile(app, "hiphop_guitar.mp3");
-    cinematic = new SoundFile(app, "funk_guitar.mp3"); // Note: Using funk for cinematic
-=======
     jazz      = new SoundFile(app, base + "/jazz guitar.mp3");
     hiphop    = new SoundFile(app, base + "/hiphop guitar.mp3");
     funk = new SoundFile(app, base + "/funk guitar.mp3");
->>>>>>> ml_yejin
     labels = GENRE_NAMES;
   }
 
