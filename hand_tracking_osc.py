@@ -31,7 +31,7 @@ hands = mp_hands.Hands(
 )
 
 # 사용자 설정 유지: 웹캠 2번, AVFOUNDATION 백엔드 사용
-cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
+cap = cv2.VideoCapture(2, cv2.CAP_AVFOUNDATION)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
@@ -39,12 +39,14 @@ print(f"Start Sending OSC to {IP}:{PORT}...")
 print("Inputs: 두 손 랜드마크 전체 (좌 21점 x,y,z + 우 21점 x,y,z = 126 floats)")
 print("Press 'q' to quit.")
 
+
 # 21개 랜드마크를 x,y,z로 평탄화
 def flatten_landmarks(hand_landmarks):
     flat = []
     for lm in hand_landmarks.landmark:
         flat.extend([lm.x, lm.y, lm.z])
     return flat
+
 
 while cap.isOpened():
     success, image = cap.read()
