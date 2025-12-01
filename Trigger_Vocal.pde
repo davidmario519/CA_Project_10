@@ -60,13 +60,13 @@ class VocalTrigger {
 
     if (genre == 0) jazz.play();
     else if (genre == 1) hiphop.play();
-    else if (genre == 2) cinematic.play();
+    else if (genre == 2) funk.play();
   }
 
   void stopAll() {
     if (jazz != null) jazz.stop();
     if (hiphop != null) hiphop.stop();
-    if (cinematic != null) cinematic.stop();
+    if (funk != null) funk.stop();
   }
 
   int getCurrentGenre() {
@@ -84,7 +84,7 @@ class VocalTrigger {
   int mapGenre(float v) {
     if (v >= 0.15 && v <= 0.35) return 0; // Jazz ~0.25
     if (v >= 0.40 && v <= 0.60) return 1; // HipHop ~0.50
-    if (v >= 0.65 && v <= 0.85) return 2; // Cinematic ~0.75
+    if (v >= 0.65 && v <= 0.85) return 2; // funk ~0.75
     return UNKNOWN;
   }
 
