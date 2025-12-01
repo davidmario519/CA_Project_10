@@ -43,7 +43,7 @@ DrumTrigger drumTrigger;
 GuitarTrigger guitarTrigger;
 VocalTrigger vocalTrigger;
 TimeQuantizer loopQuantizer;
-InstrumentVisualizerWindow visWindow;
+// InstrumentVisualizerWindow visWindow;
 
 // FaceOSC 입력 + feature
 FaceReceiver faceReceiver;
@@ -99,13 +99,13 @@ void setup() {
 
   // Visualizer audio (jazz defaults)
   vizMinim = new Minim(this);
-  vizVocal = vizMinim.loadFile("jazz vocal.mp3", 2048);
-  vizGuitar = vizMinim.loadFile("jazz guitar.mp3", 2048);
+  vizVocal = vizMinim.loadFile("jazz_vocal.mp3", 2048);
+  vizGuitar = vizMinim.loadFile("jazz_guitar.mp3", 2048);
   if (vizVocal != null) vizVocal.loop();
   if (vizGuitar != null) vizGuitar.loop();
   if (vizVocal != null) vizVocalFFT = new ddf.minim.analysis.FFT(vizVocal.bufferSize(), vizVocal.sampleRate());
 
-  vizDrum = new SoundFile(this, "jazz drum.mp3");
+  vizDrum = new SoundFile(this, "jazz_drum.mp3");
   vizDrum.loop();
   vizDrumAmp = new Amplitude(this);
   vizDrumAmp.input(vizDrum);
@@ -122,9 +122,9 @@ void setup() {
   loopQuantizer = new TimeQuantizer(this, GENRE_NAMES);
 
   // 시각화 보조 창 실행
-  visWindow = new InstrumentVisualizerWindow(dataPath(""));
+  // visWindow = new InstrumentVisualizerWindow(dataPath(""));
   String[] args = { "InstrumentVisualizerWindow" };
-  PApplet.runSketch(args, visWindow);
+  // PApplet.runSketch(args, visWindow);
 }
 
 void draw() {
@@ -234,11 +234,11 @@ public void onDrumOut(float v) {
     if (loopQuantizer != null && drumGenre >= 0 && drumGenre != prev) {
       loopQuantizer.queueClip(0, drumGenre);
     }
-    if (visWindow != null && drumGenre >= 0 && drumGenre != prev) {
-      visWindow.setDrum(drumGenre);
+    // if (visWindow != null && drumGenre >= 0 && drumGenre != prev) {
+    //   visWindow.setDrum(drumGenre);
     }
   }
-}
+
 
 public void onGuitarOut(float classifierVal, float genreVal) {
   if (guitarTrigger != null) {
@@ -251,9 +251,9 @@ public void onGuitarOut(float classifierVal, float genreVal) {
     if (loopQuantizer != null && guitarGenre >= 0 && guitarGenre != prev) {
       loopQuantizer.queueClip(1, guitarGenre);
     }
-    if (visWindow != null && guitarGenre >= 0 && guitarGenre != prev) {
-      visWindow.setGuitar(guitarGenre);
-    }
+    // if (visWindow != null && guitarGenre >= 0 && guitarGenre != prev) {
+    //   visWindow.setGuitar(guitarGenre);
+    // }
   }
 }
 
@@ -268,14 +268,14 @@ public void onVocalOut(float classifierVal, float continuousVal) {
     if (loopQuantizer != null && vocalGenre >= 0 && vocalGenre != prev) {
       loopQuantizer.queueClip(2, vocalGenre);
     }
-    if (visWindow != null && vocalGenre >= 0 && vocalGenre != prev) {
-      visWindow.setVocal(vocalGenre);
+    // if (visWindow != null && vocalGenre >= 0 && vocalGenre != prev) {
+    //   visWindow.setVocal(vocalGenre);
     }
     if (VOCAL_DEBUG) {
       println("[VOCAL STATE] current=" + genreLabel(vocalGenre));
     }
   }
-}
+
 
 String genreLabel(int idx) {
   if (idx == -1) return "Rest";
@@ -288,24 +288,24 @@ String genreLabel(int idx) {
 // =======================================================
 void drawDebug() {
 
-  fill(255);
-  textSize(18);
+  // fill(255);
+  // textSize(18);
 
-  text("=== SmartPhone Input Vector ===", 30, 60);
-  for (int i = 0; i < numInputs; i++) {
-    text("Input " + i + ": " + inputVector[i], 30, 90 + i * 20);
-  }
+  // text("=== SmartPhone Input Vector ===", 30, 60);
+  // for (int i = 0; i < numInputs; i++) {
+  //   text("Input " + i + ": " + inputVector[i], 30, 90 + i * 20);
+  // }
 
-  text("DRUM OUT : " + genreLabel(drumGenre), 30, 300);
-  text("GUITAR OUT : " + genreLabel(guitarGenre), 30, 330);
-  text("VOCAL OUT  : " + genreLabel(vocalGenre), 30, 360);
+  // text("DRUM OUT : " + genreLabel(drumGenre), 30, 300);
+  // text("GUITAR OUT : " + genreLabel(guitarGenre), 30, 330);
+  // text("VOCAL OUT  : " + genreLabel(vocalGenre), 30, 360);
 
-  if (loopQuantizer != null) {
-    text("LOOP DRUM  : " + loopQuantizer.playingLabel(0), 30, 420);
-    text("LOOP GUITAR: " + loopQuantizer.playingLabel(1), 30, 450);
-    text("LOOP VOCAL : " + loopQuantizer.playingLabel(2), 30, 480);
-    text("BEAT #" + loopQuantizer.currentBeat() + " (q=" + loopQuantizer.quantization + ", bpm=" + loopQuantizer.bpm + ")", 30, 510);
-  }
+  // if (loopQuantizer != null) {
+  //   text("LOOP DRUM  : " + loopQuantizer.playingLabel(0), 30, 420);
+  //   text("LOOP GUITAR: " + loopQuantizer.playingLabel(1), 30, 450);
+  //   text("LOOP VOCAL : " + loopQuantizer.playingLabel(2), 30, 480);
+  //   text("BEAT #" + loopQuantizer.currentBeat() + " (q=" + loopQuantizer.quantization + ", bpm=" + loopQuantizer.bpm + ")", 30, 510);
+  // }
 }
 
 // 키로 루프 큐잉: qwe / asd / zxc
