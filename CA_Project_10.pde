@@ -294,4 +294,18 @@ void keyPressed() {
   if (loopQuantizer != null) {
     loopQuantizer.handleKey(key);
   }
+
+  // Also update genre state for visuals when keys are used
+  char k = Character.toLowerCase(key);
+  if (k == 'q') drumGenre = 0;
+  if (k == 'w') drumGenre = 1;
+  if (k == 'e') drumGenre = 2;
+
+  if (k == 'a') guitarGenre = 0;
+  if (k == 's') guitarGenre = 1;
+  if (k == 'd') guitarGenre = 2;
+
+  if (k == 'z') vocalGenre = 0;
+  if (k == 'x') vocalGenre = 1;
+  if (k == 'c') vocalGenre = 2;
 }
