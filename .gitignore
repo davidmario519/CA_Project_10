@@ -1,0 +1,40 @@
+# macOS
+.DS_Store
+
+# Processing build files
+*.class
+*.jar
+*.ser
+/bin/
+/build/
+/output/
+/out/
+/*.pde~
+/*.tmp
+
+# Processing exported app folders
+/application.macos/
+/application.windows/
+/application.linux/
+
+# IF data folder contains required assets, do NOT ignore them
+# (예진 프로젝트에서는 sound files are required, so do NOT ignore)
+# data/*.mp3
+# data/*.wav
+# data/*.aiff
+# data/*.mp4
+# data/*.mov
+
+# Python
+__pycache__/
+*.pyc
+env/
+venv/
+*.egg-info/
+
+# Logs
+*.log
+
+# Misc
+*.zip
+*.tmp

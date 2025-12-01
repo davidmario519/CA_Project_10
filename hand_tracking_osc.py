@@ -4,8 +4,10 @@ import numpy as np
 from pythonosc import udp_client
 
 # --- [설정] ---
+# 기본: Processing에서 듣는 포트/주소로 송신 → Processing이 Wekinator(6449)로 전달
 IP = "127.0.0.1"
-PORT = 6448
+PORT = 7000
+OSC_ADDR = "/hand/features"  # Processing/Input_MPReceiverOSC.pde가 기대하는 주소
 
 # --- [초기화] ---
 client = udp_client.SimpleUDPClient(IP, PORT)
@@ -17,7 +19,7 @@ hands = mp_hands.Hands(
 )
 
 # 사용자 설정 유지: 웹캠 2번, AVFOUNDATION 백엔드 사용
-cap = cv2.VideoCapture(2, cv2.CAP_AVFOUNDATION)
+cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
@@ -100,7 +102,7 @@ while cap.isOpened():
 
         # OSC 전송 (4개 값: 가로, 세로, 중심X, 중심Y)
         client.send_message(
-            "/wek/inputs", [norm_width, norm_height, norm_center_x, norm_center_y]
+            OSC_ADDR, [norm_width, norm_height, norm_center_x, norm_center_y]
         )
 
         # --- [시각화] ---
