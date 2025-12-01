@@ -27,7 +27,7 @@ int drumGenre = -1;
 int guitarGenre = -1;
 int vocalGenre = -1;
 
-String[] GENRE_NAMES = { "Jazz", "HipHop", "Cinematic" };
+String[] GENRE_NAMES = { "Jazz", "HipHop", "Funk" };
 
 // Wekinator 출력 시작값: 보통 1(1,2,3)이나 환경에 따라 0 또는 2일 수 있음
 final int FACE_OSC_PORT = 8338;
@@ -67,12 +67,6 @@ ddf.minim.analysis.FFT vizVocalFFT;
 SoundFile vizDrum;
 Amplitude vizDrumAmp;
 processing.sound.FFT vizDrumFFT;
-int vizVocalLoaded = -1;
-int vizGuitarLoaded = -1;
-int vizDrumLoaded = -1;
-String[] vizVocalTracks = { "jazz vocal.mp3", "hiphop vocal.mp3", "funk vocal.mp3" };
-String[] vizGuitarTracks = { "jazz guitar.mp3", "hiphop guitar.mp3", "funk guitar.mp3" };
-String[] vizDrumTracks  = { "jazz drum.mp3",  "hiphop drum.mp3",  "funk drum.mp3" };
 
 void setup() {
   size(900, 600);
@@ -102,9 +96,18 @@ void setup() {
 
   // Visualizer audio (jazz defaults)
   vizMinim = new Minim(this);
-  loadVizVocal(0);
-  loadVizGuitar(0);
-  loadVizDrum(0);
+  vizVocal = vizMinim.loadFile("jazz vocal.mp3", 2048);
+  vizGuitar = vizMinim.loadFile("jazz guitar.mp3", 2048);
+  if (vizVocal != null) vizVocal.loop();
+  if (vizGuitar != null) vizGuitar.loop();
+  if (vizVocal != null) vizVocalFFT = new ddf.minim.analysis.FFT(vizVocal.bufferSize(), vizVocal.sampleRate());
+
+  vizDrum = new SoundFile(this, "jazz drum.mp3");
+  vizDrum.loop();
+  vizDrumAmp = new Amplitude(this);
+  vizDrumAmp.input(vizDrum);
+  vizDrumFFT = new processing.sound.FFT(this, 512);
+  vizDrumFFT.input(vizDrum);
   comboViz = new CombinedVisualizer(this);
 
   // Prepare audio triggers
@@ -127,73 +130,10 @@ void draw() {
 }
 
 void drawVisuals() {
-  updateVizSources();
   if (comboViz == null) return;
-  int visDrumGenre = drumGenre;
-  int visGuitarGenre = guitarGenre;
-  int visVocalGenre = vocalGenre;
-  if (loopQuantizer != null) {
-    int dg = loopQuantizer.playingGenre(0);
-    int gg = loopQuantizer.playingGenre(1);
-    int vg = loopQuantizer.playingGenre(2);
-    if (dg != -1) visDrumGenre = dg;
-    if (gg != -1) visGuitarGenre = gg;
-    if (vg != -1) visVocalGenre = vg;
-  }
   float drumAmpVal = vizDrumAmp != null ? vizDrumAmp.analyze() : 0;
   comboViz.drawAll(vizVocal, vizVocalFFT, vizGuitar, drumAmpVal, vizDrumFFT,
-                   visVocalGenre, visGuitarGenre, visDrumGenre);
-}
-
-void updateVizSources() {
-  int targetVocal = vocalGenre;
-  int targetGuitar = guitarGenre;
-  int targetDrum = drumGenre;
-  if (loopQuantizer != null) {
-    int dg = loopQuantizer.playingGenre(0);
-    int gg = loopQuantizer.playingGenre(1);
-    int vg = loopQuantizer.playingGenre(2);
-    if (dg != -1) targetDrum = dg;
-    if (gg != -1) targetGuitar = gg;
-    if (vg != -1) targetVocal = vg;
-  }
-
-  if (targetVocal >= 0 && targetVocal != vizVocalLoaded) loadVizVocal(targetVocal);
-  if (targetGuitar >= 0 && targetGuitar != vizGuitarLoaded) loadVizGuitar(targetGuitar);
-  if (targetDrum >= 0 && targetDrum != vizDrumLoaded) loadVizDrum(targetDrum);
-}
-
-void loadVizVocal(int genre) {
-  if (genre < 0 || genre >= vizVocalTracks.length) return;
-  if (vizVocal != null) vizVocal.close();
-  vizVocal = vizMinim.loadFile(vizVocalTracks[genre], 2048);
-  if (vizVocal != null) {
-    vizVocal.loop();
-    vizVocalFFT = new ddf.minim.analysis.FFT(vizVocal.bufferSize(), vizVocal.sampleRate());
-    vizVocalLoaded = genre;
-  }
-}
-
-void loadVizGuitar(int genre) {
-  if (genre < 0 || genre >= vizGuitarTracks.length) return;
-  if (vizGuitar != null) vizGuitar.close();
-  vizGuitar = vizMinim.loadFile(vizGuitarTracks[genre], 2048);
-  if (vizGuitar != null) {
-    vizGuitar.loop();
-    vizGuitarLoaded = genre;
-  }
-}
-
-void loadVizDrum(int genre) {
-  if (genre < 0 || genre >= vizDrumTracks.length) return;
-  if (vizDrum != null) vizDrum.stop();
-  vizDrum = new SoundFile(this, vizDrumTracks[genre]);
-  vizDrum.loop();
-  vizDrumAmp = new Amplitude(this);
-  vizDrumAmp.input(vizDrum);
-  vizDrumFFT = new processing.sound.FFT(this, 512);
-  vizDrumFFT.input(vizDrum);
-  vizDrumLoaded = genre;
+                   vocalGenre, guitarGenre, drumGenre);
 }
 
 // =======================================================

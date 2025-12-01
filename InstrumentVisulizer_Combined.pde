@@ -19,19 +19,19 @@ class CombinedVisualizer {
 
     // Palettes per genre: 0=Jazz,1=HipHop,2=Funk
     vocalPalettes = new color[][] {
-      { p.color(255), p.color(230), p.color(190), p.color(150), p.color(110) },  // Jazz: bright grayscale
-      { p.color(255), p.color(220), p.color(170), p.color(130), p.color(90) },   // HipHop: warm gray
-      { p.color(245), p.color(210), p.color(175), p.color(140), p.color(100) }   // Funk: neutral gray
+      { p.color(245), p.color(210), p.color(170), p.color(130), p.color(90) },   // Jazz: bright-to-dark gray
+      { p.color(240), p.color(190), p.color(150), p.color(110), p.color(70) },   // HipHop: warm gray
+      { p.color(230), p.color(205), p.color(170), p.color(140), p.color(100) }   // Funk: neutral gray
     };
     guitarPalettes = new color[][] {
-      { p.color(80, 190, 255),  p.color(110, 210, 255), p.color(150, 225, 255), p.color(190, 235, 255), p.color(225, 245, 255) }, // Jazz blue
-      { p.color(255, 140, 140), p.color(255, 110, 120), p.color(235, 90, 110),  p.color(210, 70, 90),   p.color(180, 50, 80) },    // HipHop coral/red
-      { p.color(140, 230, 160), p.color(120, 210, 145), p.color(100, 190, 130), p.color(85, 170, 115),  p.color(70, 150, 100) }    // Funk green
+      { p.color(70, 170, 255),  p.color(90, 190, 255),  p.color(120, 205, 255), p.color(170, 220, 255), p.color(215, 235, 255) }, // Jazz blue
+      { p.color(255, 120, 120), p.color(240, 90, 90),   p.color(220, 70, 70),   p.color(200, 60, 60),   p.color(170, 50, 50) },   // HipHop red
+      { p.color(120, 210, 140), p.color(100, 190, 120), p.color(80, 170, 105),  p.color(70, 150, 95),   p.color(60, 135, 80) }    // Funk green
     };
     drumPalettes = new color[][] {
-      { p.color(170), p.color(100) },   // Jazz brighter gray
-      { p.color(230), p.color(140) },   // HipHop bright warm gray
-      { p.color(150), p.color(90) }     // Funk mid gray
+      { p.color(120), p.color(70) },   // Jazz
+      { p.color(200), p.color(120) },  // HipHop
+      { p.color(90),  p.color(55) }    // Funk
     };
   }
 
