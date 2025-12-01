@@ -13,6 +13,7 @@ class TimeQuantizer {
   int lastCheckedBeat = -1;
 
   Clip[] clips = new Clip[9]; // 3장르 x 3컬럼
+  int[] activeGenre = { -1, -1, -1 }; // per column
 
   String[] genreKeys = { "jazz", "hiphop", "funk" };
   String[] instKeys = { "drum", "guitar", "vocal" };
@@ -85,6 +86,7 @@ class TimeQuantizer {
 
   void stopColumn(int colIndex) {
     stopOthersInColumn(colIndex, -1);
+    activeGenre[colIndex] = -1;
   }
 
   String playingLabel(int colIndex) {
@@ -104,6 +106,7 @@ class TimeQuantizer {
       if (c.isQueued) {
         stopOthersInColumn(c.colIndex, c.id);
         c.launch();
+        activeGenre[c.colIndex] = c.genreIndex;
       }
     }
   }
@@ -128,6 +131,27 @@ class TimeQuantizer {
   // 디버그용: 현재 박자 반환
   int currentBeat() {
     return (int)((app.millis() - referenceTime) / msPerBeat);
+  }
+
+  int playingGenre(int colIndex) {
+    if (colIndex < 0 || colIndex >= activeGenre.length) return -1;
+    return activeGenre[colIndex];
+  }
+
+  // 키보드 매핑: qwe / asd / zxc → (genre row, instrument col)
+  void handleKey(char keyChar) {
+    char k = Character.toLowerCase(keyChar);
+    if (k == 'q') { queueClip(0, 0); return; } // Drum Jazz
+    if (k == 'w') { queueClip(0, 1); return; } // Drum HipHop
+    if (k == 'e') { queueClip(0, 2); return; } // Drum Funk
+
+    if (k == 'a') { queueClip(1, 0); return; } // Guitar Jazz
+    if (k == 's') { queueClip(1, 1); return; } // Guitar HipHop
+    if (k == 'd') { queueClip(1, 2); return; } // Guitar Funk
+
+    if (k == 'z') { queueClip(2, 0); return; } // Vocal Jazz
+    if (k == 'x') { queueClip(2, 1); return; } // Vocal HipHop
+    if (k == 'c') { queueClip(2, 2); return; } // Vocal Funk
   }
 
   // ---------------------------------------------------
