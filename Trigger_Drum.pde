@@ -19,9 +19,9 @@ class DrumTrigger {
   static final int UNKNOWN = -2;
 
   DrumTrigger(PApplet app) {
-    jazz      = new SoundFile(app, base + "/jazz/jazz drum.mp3");
-    hiphop    = new SoundFile(app, base + "/hiphop/hiphop drum.mp3");
-    cinematic = new SoundFile(app, base + "/cinematic/cinematic drum.mp3");
+    jazz      = new SoundFile(app, base + "/jazz drum.mp3");
+    hiphop    = new SoundFile(app, base + "/hiphop drum.mp3");
+    cinematic = new SoundFile(app, base + "/cinematic drum.mp3");
     labels = GENRE_NAMES;
   }
 

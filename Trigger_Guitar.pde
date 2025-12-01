@@ -20,9 +20,9 @@ class GuitarTrigger {
   static final int UNKNOWN = -2;
 
   GuitarTrigger(PApplet app) {
-    jazz      = new SoundFile(app, base + "/jazz/jazz guitar.mp3");
-    hiphop    = new SoundFile(app, base + "/hiphop/hiphop guitar.mp3");
-    cinematic = new SoundFile(app, base + "/cinematic/cinematic guitar.mp3");
+    jazz      = new SoundFile(app, base + "/jazz guitar.mp3");
+    hiphop    = new SoundFile(app, base + "/hiphop guitar.mp3");
+    cinematic = new SoundFile(app, base + "/cinematic guitar.mp3");
     labels = GENRE_NAMES;
   }
 
