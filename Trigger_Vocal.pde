@@ -56,6 +56,14 @@ class VocalTrigger {
   void trigger(int genre) {
     if (genre == last) return;
     last = genre;
+
+    // 루프 매니저가 있으면 위임
+    if (loopQuantizer != null) {
+      stopAll();
+      loopQuantizer.queueClip(2, genre);
+      return;
+    }
+
     stopAll();
 
     if (genre == 0) jazz.play();

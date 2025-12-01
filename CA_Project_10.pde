@@ -20,9 +20,9 @@ float[] inputVector = new float[0];
 int numInputs = 0;
 
 // Output results
-int drumGenre = 0;
-int guitarGenre = 0;
-int vocalGenre = 0;
+int drumGenre = -1;
+int guitarGenre = -1;
+int vocalGenre = -1;
 
 String[] GENRE_NAMES = { "Jazz", "HipHop", "Cinematic" };
 
@@ -37,6 +37,7 @@ boolean VOCAL_DEBUG = true;   // Vocal 파이프라인 디버그 로그
 DrumTrigger drumTrigger;
 GuitarTrigger guitarTrigger;
 VocalTrigger vocalTrigger;
+TimeQuantizer loopQuantizer;
 
 // FaceOSC 입력 + feature
 FaceReceiver faceReceiver;
@@ -82,6 +83,9 @@ void setup() {
   drumTrigger   = new DrumTrigger(this);
   guitarTrigger = new GuitarTrigger(this);
   vocalTrigger  = new VocalTrigger(this);
+
+  // 박자 정렬 루프 매니저
+  loopQuantizer = new TimeQuantizer(this, GENRE_NAMES);
 }
 
 void draw() {
@@ -89,6 +93,7 @@ void draw() {
   sendDrumInputs();
   updateAndSendVocalInputs();
   updateAndSendGuitarInputs();
+  if (loopQuantizer != null) loopQuantizer.update();
   drawDebug();
 }
 
@@ -174,15 +179,23 @@ void updateAndSendGuitarInputs() {
 // 3 Output Handlers (경량 래퍼: 안정화/매핑은 Trigger 클래스에 위임)
 public void onDrumOut(float v) {
   if (drumTrigger != null) {
+    int prev = drumGenre;
     drumTrigger.onOsc(v);
     drumGenre = drumTrigger.getCurrentGenre();
+    if (loopQuantizer != null && drumGenre >= 0 && drumGenre != prev) {
+      loopQuantizer.queueClip(0, drumGenre);
+    }
   }
 }
 
 public void onGuitarOut(float v) {
   if (guitarTrigger != null) {
+    int prev = guitarGenre;
     guitarTrigger.onOsc(v);
     guitarGenre = guitarTrigger.getCurrentGenre();
+    if (loopQuantizer != null && guitarGenre >= 0 && guitarGenre != prev) {
+      loopQuantizer.queueClip(1, guitarGenre);
+    }
   }
 }
 
@@ -192,7 +205,11 @@ public void onVocalOut(float classifierVal, float continuousVal) {
       println("[VOCAL OUT RAW] cls=" + classifierVal + " cont=" + continuousVal);
     }
     vocalTrigger.onOsc(classifierVal, continuousVal);
+    int prev = vocalGenre;
     vocalGenre = vocalTrigger.getCurrentGenre();
+    if (loopQuantizer != null && vocalGenre >= 0 && vocalGenre != prev) {
+      loopQuantizer.queueClip(2, vocalGenre);
+    }
     if (VOCAL_DEBUG) {
       println("[VOCAL STATE] current=" + genreLabel(vocalGenre));
     }
@@ -221,4 +238,21 @@ void drawDebug() {
   text("DRUM OUT : " + genreLabel(drumGenre), 30, 300);
   text("GUITAR OUT : " + genreLabel(guitarGenre), 30, 330);
   text("VOCAL OUT  : " + genreLabel(vocalGenre), 30, 360);
+
+  if (loopQuantizer != null) {
+    text("LOOP DRUM  : " + loopQuantizer.playingLabel(0), 30, 420);
+    text("LOOP GUITAR: " + loopQuantizer.playingLabel(1), 30, 450);
+    text("LOOP VOCAL : " + loopQuantizer.playingLabel(2), 30, 480);
+    text("BEAT #" + loopQuantizer.currentBeat() + " (q=" + loopQuantizer.quantization + ", bpm=" + loopQuantizer.bpm + ")", 30, 510);
+    // 오른쪽에 간단한 루프 선택 UI
+    loopQuantizer.drawUI(520, 80, 330, 300);
+    text("Click grid to queue loop (per instrument column)", 520, 410);
+  }
+}
+
+// 마우스 클릭으로 루프 큐잉 UI 제어
+void mousePressed() {
+  if (loopQuantizer != null) {
+    loopQuantizer.handleClick(mouseX, mouseY, 520, 80, 330, 300);
+  }
 }

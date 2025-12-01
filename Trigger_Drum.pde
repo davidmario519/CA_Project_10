@@ -54,6 +54,14 @@ class DrumTrigger {
   void trigger(int genre) {
     if (genre == last) return;
     last = genre;
+
+    // 루프 매니저가 있으면 거기에 위임 (박자에 맞춰 교체)
+    if (loopQuantizer != null) {
+      stopAll();
+      loopQuantizer.queueClip(0, genre);
+      return;
+    }
+
     stopAll();
 
     if (genre == 0) jazz.play();
