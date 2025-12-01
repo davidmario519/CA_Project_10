@@ -36,8 +36,8 @@ class CombinedVisualizer {
   }
 
   void drawAll(AudioPlayer voc, ddf.minim.analysis.FFT vocFFT,
-               AudioPlayer git,
-               float drumAmp, processing.sound.FFT drumFFT,
+               AudioPlayer git, ddf.minim.analysis.FFT gitFFT,
+               AudioPlayer drm, ddf.minim.analysis.FFT drmFFT,
                int vocalGenre, int guitarGenre, int drumGenre) {
 
     applyPalettes(vocalGenre, guitarGenre, drumGenre);
@@ -48,7 +48,7 @@ class CombinedVisualizer {
 
     vocal.draw(voc, vocFFT, vocalY);
     guitar.draw(git, guitarY);
-    drum.draw(drumAmp, drumFFT, drumY);
+    drum.draw(drm, drmFFT, drumY);
   }
 
   void applyPalettes(int vGenre, int gGenre, int dGenre) {

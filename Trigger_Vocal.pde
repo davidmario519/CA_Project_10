@@ -1,11 +1,5 @@
 class VocalTrigger {
 
-  SoundFile jazz;
-  SoundFile hiphop;
-  SoundFile funk;
-
-  int last = -1;
-  String base = "data"; // 오디오 파일이 있는 기본 폴더
   String[] labels;
 
   // 보컬 전용: 2단계 구조 (Classifier + Continuous)
@@ -15,9 +9,6 @@ class VocalTrigger {
   int minActiveDuration = 500; // ms: 최소 0.5초 이상 입을 열어야 반응
 
   VocalTrigger(PApplet app) {
-    jazz      = new SoundFile(app, base + "/jazz vocal.mp3");
-    hiphop    = new SoundFile(app, base + "/hiphop vocal.mp3");
-    funk = new SoundFile(app, base + "/funk vocal.mp3");
     labels = GENRE_NAMES;
   }
 
@@ -26,7 +17,6 @@ class VocalTrigger {
     int cls = mapClassifier(classifierVal);
     if (cls == REST) {
       ready = true;
-      last = REST;       // 입을 닫았다가 다시 열면 같은 continuous여도 재생 허용
       activeStartMillis = 0; // 타이머 리셋
       if (VOCAL_DEBUG) println("[VOCAL] REST (hold last)");
       return;
@@ -54,19 +44,9 @@ class VocalTrigger {
   }
 
   void trigger(int genre) {
-    if (genre == last) return;
-    last = genre;
-    stopAll();
-
-    if (genre == 0) jazz.play();
-    else if (genre == 1) hiphop.play();
-    else if (genre == 2) funk.play();
-  }
-
-  void stopAll() {
-    if (jazz != null) jazz.stop();
-    if (hiphop != null) hiphop.stop();
-    if (funk != null) funk.stop();
+    if (loopQuantizer != null) {
+      loopQuantizer.queueClip(2, genre); // Column 2 for Vocal
+    }
   }
 
   int getCurrentGenre() {

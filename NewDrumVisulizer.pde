@@ -15,14 +15,14 @@ class DrumVisualizer {
     fillCol = fill;
   }
 
-  // volume: amplitude value from Amplitude.analyze(); fft should be wired to the same sound source.
-  void draw(float volume, processing.sound.FFT fft, float yOffset) {
-    if (fft == null) return;
+  // Draw using a Minim AudioPlayer and FFT
+  void draw(AudioPlayer drum, ddf.minim.analysis.FFT fft, float yOffset) {
+    if (drum == null || !drum.isPlaying() || fft == null) return;
 
-    fft.analyze();
-    float bass = fft.spectrum[1]*10 + fft.spectrum[2]*10 + fft.spectrum[3]*10;
+    float level = drum.mix.level();
+    float bass = fft.getBand(1)*10 + fft.getBand(2)*10 + fft.getBand(3)*10;
 
-    float targetAmp = p.map(bass, 0, 0.5f, 40, 180);
+    float targetAmp = p.map(bass, 0, 5, 40, 180); // Adjusted mapping for minim's scale
     smoothAmp = p.lerp(smoothAmp, targetAmp, 0.08f);
 
     // fade for a subtle trail at the drum band
@@ -31,13 +31,12 @@ class DrumVisualizer {
     p.rect(0, yOffset - 140, p.width, 280);
 
     float binW = p.width / (float)bins;
-    int fftSize = fft.spectrum.length;
-
+    
     p.stroke(barCol);
     p.fill(fillCol, 180);
     for (int i = 0; i < bins; i++) {
-      int idx = (int)PApplet.map(i, 0, bins-1, 0, fftSize-1);
-      float energy = fft.spectrum[idx] * 8 + bass * 0.6f + smoothAmp * 0.2f;
+      int fftIndex = (int)PApplet.map(i, 0, bins-1, 0, fft.specSize()-1);
+      float energy = fft.getBand(fftIndex) * 8 + bass * 0.6f + smoothAmp * 0.2f;
       float h = PApplet.constrain(energy, 0, 220);
       float x = i * binW;
       float top = yOffset - h;

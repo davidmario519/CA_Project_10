@@ -1,11 +1,5 @@
 class DrumTrigger {
 
-  SoundFile jazz;
-  SoundFile hiphop;
-  SoundFile funk;
-
-  int last = -1;
-  String base = "data"; // 오디오 파일이 있는 기본 폴더
   String[] labels;
 
   // 안정화용 상태
@@ -19,9 +13,6 @@ class DrumTrigger {
   static final int UNKNOWN = -2;
 
   DrumTrigger(PApplet app) {
-    jazz      = new SoundFile(app, "jazz_drum.mp3");
-    hiphop    = new SoundFile(app, "hiphop_drum.mp3");
-    funk      = new SoundFile(app, "funk_drum.mp3");
     labels = GENRE_NAMES;
   }
 
@@ -52,27 +43,10 @@ class DrumTrigger {
   }
 
   void trigger(int genre) {
-    if (genre == last) return;
-    last = genre;
-
-    // 루프 매니저가 있으면 거기에 위임 (박자에 맞춰 교체)
+    // Only delegate to the quantizer
     if (loopQuantizer != null) {
-      stopAll();
-      loopQuantizer.queueClip(0, genre);
-      return;
+      loopQuantizer.queueClip(0, genre); // Column 0 for Drum
     }
-
-    stopAll();
-
-    if (genre == 0) jazz.play();
-    else if (genre == 1) hiphop.play();
-    else if (genre == 2) funk.play();
-  }
-
-  void stopAll() {
-    if (jazz != null) jazz.stop();
-    if (hiphop != null) hiphop.stop();
-    if (funk != null) funk.stop();
   }
 
   int getCurrentGenre() {

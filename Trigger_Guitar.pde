@@ -1,11 +1,5 @@
 class GuitarTrigger {
 
-  SoundFile jazz;
-  SoundFile hiphop;
-  SoundFile funk;
-
-  int last = -1;
-  String base = "data"; // 오디오 파일이 있는 기본 폴더
   String[] labels;
 
   int current = REST;          // 화면 표시용 현재 상태
@@ -16,9 +10,6 @@ class GuitarTrigger {
   static final int ACTIVE = 10;
 
   GuitarTrigger(PApplet app) {
-    jazz      = new SoundFile(app, base + "/jazz guitar.mp3");
-    hiphop    = new SoundFile(app, base + "/hiphop guitar.mp3");
-    funk = new SoundFile(app, base + "/funk guitar.mp3");
     labels = GENRE_NAMES;
   }
 
@@ -49,27 +40,10 @@ class GuitarTrigger {
   }
 
   void trigger(int genre) {
-    if (genre == last) return;
-    last = genre;
-
-    // 루프 매니저가 있으면 위임
+    // Only delegate to the quantizer
     if (loopQuantizer != null) {
-      stopAll();
-      loopQuantizer.queueClip(1, genre);
-      return;
+      loopQuantizer.queueClip(1, genre); // Column 1 for Guitar
     }
-
-    stopAll();
-
-    if (genre == 0) jazz.play();
-    else if (genre == 1) hiphop.play();
-    else if (genre == 2) funk.play();
-  }
-
-  void stopAll() {
-    if (jazz != null) jazz.stop();
-    if (hiphop != null) hiphop.stop();
-    if (funk != null) funk.stop();
   }
 
   int getCurrentGenre() {

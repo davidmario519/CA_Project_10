@@ -3,8 +3,6 @@
 // MotionReceiver 제거 + 스마트폰 벡터 자동 수신
 // =======================================================
 
-import processing.sound.SoundFile;
-import processing.sound.Amplitude;
 import oscP5.*;
 import netP5.*;
 import ddf.minim.*;
@@ -13,118 +11,100 @@ import ddf.minim.analysis.*;
 // OSC
 OscP5 oscIn;
 
-// 3개의 Wekinator 모델
+// Wekinator
 NetAddress drumWek;
 NetAddress guitarWek;
 NetAddress vocalWek;
 
-// 스마트폰에서 받을 input vector (동적 크기)
+// Inputs
 float[] inputVector = new float[0];   
 int numInputs = 0;
+FaceReceiver faceReceiver;
+FaceFeatureExtractor faceFeatures;
+float[] vocalInputs = new float[0];
+MPHandReceiver handReceiver;
+MPFeatureExtractor handFeatures;
+float[] guitarInputs = new float[0];
 
-// Output results
+// Outputs
 int drumGenre = -1;
 int guitarGenre = -1;
 int vocalGenre = -1;
 
+// Core Logic
 String[] GENRE_NAMES = { "Jazz", "HipHop", "Funk" };
-
-// Wekinator 출력 시작값: 보통 1(1,2,3)이나 환경에 따라 0 또는 2일 수 있음
-final int FACE_OSC_PORT = 8338;
-final int HAND_OSC_PORT = 7000;
-boolean FACE_DEBUG = false;
-boolean HAND_DEBUG = true;
-boolean VOCAL_DEBUG = true;   // Vocal 파이프라인 디버그 로그
-boolean GUITAR_DEBUG = true;  // Guitar 파이프라인 디버그 로그
-boolean LOOP_DEBUG = true;    // 루프/퀀타이저 로딩/큐잉 로그
-
-// Audio triggers
 DrumTrigger drumTrigger;
 GuitarTrigger guitarTrigger;
 VocalTrigger vocalTrigger;
 TimeQuantizer loopQuantizer;
-// InstrumentVisualizerWindow visWindow;
 
-// FaceOSC 입력 + feature
-FaceReceiver faceReceiver;
-FaceFeatureExtractor faceFeatures;
-float[] vocalInputs = new float[0];
+// Audio & Visuals
+Minim minim;
+CombinedVisualizer comboViz;
+// We need FFTs for each instrument channel
+ddf.minim.analysis.FFT fftVocal;
+ddf.minim.analysis.FFT fftGuitar;
+ddf.minim.analysis.FFT fftDrum;
 
-// MediaPipe 손 입력 + feature
-MPHandReceiver handReceiver;
-MPFeatureExtractor handFeatures;
-float[] guitarInputs = new float[0];
+// OSC Ports and Debug Flags
+final int FACE_OSC_PORT = 8338;
+final int HAND_OSC_PORT = 7000;
+boolean FACE_DEBUG = false;
+boolean HAND_DEBUG = true;
+boolean VOCAL_DEBUG = true;
+boolean GUITAR_DEBUG = true;
+boolean LOOP_DEBUG = true;
 
 // 개별 수신용 OscP5 인스턴스 보관 (경고 제거용)
 OscP5 faceOsc;
 OscP5 handOsc;
 
-// Visualizers
-CombinedVisualizer comboViz;
-Minim vizMinim;
-AudioPlayer vizVocal;
-AudioPlayer vizGuitar;
-ddf.minim.analysis.FFT vizVocalFFT;
-SoundFile vizDrum;
-Amplitude vizDrumAmp;
-processing.sound.FFT vizDrumFFT;
 
 void setup() {
   size(900, 600);
-  pixelDensity(1);   // 고해상도 경고 제거
-  surface.setTitle("Trio Loop – B 방식 (3 Wekinator Models - Direct Input)");
+  pixelDensity(1);
+  surface.setTitle("Trio Loop – Unified Audio Engine");
 
-  // iPhone → Processing RAW input
-  oscIn = new OscP5(this, 4886);
+  // Central Audio Engine
+  minim = new Minim(this);
 
-  // Processing → 3 Wekinator models
+  // OSC Input from devices
+  oscIn = new OscP5(this, 4886); // iPhone
+  faceOsc = new OscP5(this, FACE_OSC_PORT); // FaceOSC
+  handOsc = new OscP5(this, HAND_OSC_PORT); // MediaPipe Hand
+
+  // OSC Output to Wekinator
   drumWek   = new NetAddress("127.0.0.1", 6448);
   guitarWek = new NetAddress("127.0.0.1", 6449);
   vocalWek  = new NetAddress("127.0.0.1", 6450);
 
-  // Receive outputs
+  // OSC Input from Wekinator
   new OscP5(this, 9000).plug(this, "onDrumOut",   "/drumOut");
   new OscP5(this, 9001).plug(this, "onGuitarOut", "/guitarOut");
   new OscP5(this, 9002).plug(this, "onVocalOut",  "/vocalOut");
   
-  faceOsc = new OscP5(this, FACE_OSC_PORT); // FaceOSC 입력
-  
-  handOsc = new OscP5(this, HAND_OSC_PORT); // MediaPipe 손 입력
-
+  // Feature Extractors
   faceReceiver = new FaceReceiver();
   faceFeatures = new FaceFeatureExtractor(faceReceiver);
-
   handReceiver = new MPHandReceiver();
   handFeatures = new MPFeatureExtractor(handReceiver);
-
-  // Visualizer audio (jazz defaults)
-  vizMinim = new Minim(this);
-  vizVocal = vizMinim.loadFile("jazz_vocal.mp3", 2048);
-  vizGuitar = vizMinim.loadFile("jazz_guitar.mp3", 2048);
-  if (vizVocal != null) vizVocal.loop();
-  if (vizGuitar != null) vizGuitar.loop();
-  if (vizVocal != null) vizVocalFFT = new ddf.minim.analysis.FFT(vizVocal.bufferSize(), vizVocal.sampleRate());
-
-  vizDrum = new SoundFile(this, "jazz_drum.mp3");
-  vizDrum.loop();
-  vizDrumAmp = new Amplitude(this);
-  vizDrumAmp.input(vizDrum);
-  vizDrumFFT = new processing.sound.FFT(this, 512);
-  vizDrumFFT.input(vizDrum);
+  
+  // Visualizer
   comboViz = new CombinedVisualizer(this);
-
-  // Prepare audio triggers
+  
+  // Triggers (no audio playback)
   drumTrigger   = new DrumTrigger(this);
   guitarTrigger = new GuitarTrigger(this);
   vocalTrigger  = new VocalTrigger(this);
 
-  // 박자 정렬 루프 매니저
-  loopQuantizer = new TimeQuantizer(this, GENRE_NAMES);
-
-  // 시각화 보조 창 실행
-  // visWindow = new InstrumentVisualizerWindow(dataPath(""));
-  String[] args = { "InstrumentVisualizerWindow" };
-  // PApplet.runSketch(args, visWindow);
+  // Central Quantizer & Audio Player
+  loopQuantizer = new TimeQuantizer(this, minim, GENRE_NAMES);
+  
+  // FFT objects are created here but connected to audio sources in drawVisuals
+  // This assumes all clips have the same buffer size (e.g., 2048)
+  fftVocal = new ddf.minim.analysis.FFT(2048, 44100);
+  fftGuitar = new ddf.minim.analysis.FFT(2048, 44100);
+  fftDrum = new ddf.minim.analysis.FFT(2048, 44100);
 }
 
 void draw() {
@@ -138,9 +118,22 @@ void draw() {
 }
 
 void drawVisuals() {
-  if (comboViz == null) return;
-  float drumAmpVal = vizDrumAmp != null ? vizDrumAmp.analyze() : 0;
-  comboViz.drawAll(vizVocal, vizVocalFFT, vizGuitar, drumAmpVal, vizDrumFFT,
+  if (comboViz == null || loopQuantizer == null) return;
+
+  // Get the currently playing audio for each instrument
+  AudioPlayer vocalPlayer = loopQuantizer.getPlayingAudioPlayer(2); // 2: Vocal
+  AudioPlayer guitarPlayer = loopQuantizer.getPlayingAudioPlayer(1); // 1: Guitar
+  AudioPlayer drumPlayer = loopQuantizer.getPlayingAudioPlayer(0); // 0: Drum
+
+  // Connect FFTs to the currently playing audio sources
+  if (vocalPlayer != null) fftVocal.forward(vocalPlayer.mix);
+  if (guitarPlayer != null) fftGuitar.forward(guitarPlayer.mix);
+  if (drumPlayer != null) fftDrum.forward(drumPlayer.mix);
+
+  // Draw the combined visualizer
+  comboViz.drawAll(vocalPlayer, fftVocal, 
+                   guitarPlayer, fftGuitar, 
+                   drumPlayer, fftDrum,
                    vocalGenre, guitarGenre, drumGenre);
 }
 

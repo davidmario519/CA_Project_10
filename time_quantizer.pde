@@ -1,3 +1,5 @@
+import ddf.minim.*;
+
 // TimeQuantizer: 박자(quantization)에 맞춰 루프를 교체/재생하는 매니저
 // - 컬럼 0: Drum, 1: Guitar, 2: Vocal
 // - 장르 인덱스는 GENRE_NAMES와 동일 순서 사용 (0=Jazz, 1=HipHop, 2=Funk)
@@ -5,6 +7,7 @@
 class TimeQuantizer {
 
   PApplet app;
+  Minim minim;
   int bpm = 120;         // 기본 BPM
   int quantization = 4;  // 몇 박마다 교체할지 (4면 1마디)
 
@@ -26,8 +29,9 @@ class TimeQuantizer {
     { 16, 16, 16 }  // Funk
   };
 
-  TimeQuantizer(PApplet app, String[] genreNames) {
+  TimeQuantizer(PApplet app, Minim minim, String[] genreNames) {
     this.app = app;
+    this.minim = minim;
     this.genreNames = genreNames;
     msPerBeat = 60000 / bpm;
     referenceTime = app.millis();
@@ -38,14 +42,14 @@ class TimeQuantizer {
         String path = genreKeys[g] + "_" + instKeys[c] + ".mp3";
         String display = genreNames[g] + " " + instShort[c];
         int len = lengths[g][c];
-        clips[idx] = new Clip(app, path, len, display, c, g, idx);
+        clips[idx] = new Clip(minim, path, len, display, c, g, idx);
         idx++;
       }
     }
   }
 
   void setBpm(int bpm) {
-    if (bpm <= 0) return;
+    if (bpm <= 0 || this.bpm == bpm) return;
     this.bpm = bpm;
     msPerBeat = 60000 / bpm;
     referenceTime = app.millis();
@@ -72,13 +76,11 @@ class TimeQuantizer {
     Clip c = clips[idx];
     if (c == null) return;
 
-    // 이미 재생 중인 클립을 다시 클릭하면 해당 컬럼 전체를 정지
-    if (c.isPlaying) {
+    if (c.isPlaying()) {
       stopColumn(colIndex);
       return;
     }
 
-    // 같은 컬럼에 대기 중인 다른 클립은 취소
     cancelQueuedInColumn(colIndex, idx);
     c.isQueued = true;
   }
@@ -89,14 +91,22 @@ class TimeQuantizer {
 
   String playingLabel(int colIndex) {
     for (Clip c : clips) {
-      if (c.colIndex == colIndex && c.isPlaying) {
+      if (c.colIndex == colIndex && c.isPlaying()) {
         return c.name;
       }
     }
     return "None";
   }
+  
+  AudioPlayer getPlayingAudioPlayer(int colIndex) {
+    for (Clip c : clips) {
+      if (c.colIndex == colIndex && c.isPlaying()) {
+        return c.sound;
+      }
+    }
+    return null;
+  }
 
-  // 내부: 박자 변화 시 호출
   void onGlobalBeat(int beat) {
     if (beat % quantization != 0) return;
 
@@ -111,7 +121,7 @@ class TimeQuantizer {
   void stopOthersInColumn(int col, int exceptionId) {
     for (Clip c : clips) {
       if (c.colIndex == col && c.id != exceptionId) {
-        if (c.isPlaying) c.stop();
+        if (c.isPlaying()) c.stop();
         c.isQueued = false;
       }
     }
@@ -125,18 +135,16 @@ class TimeQuantizer {
     }
   }
 
-  // 디버그용: 현재 박자 반환
   int currentBeat() {
     return (int)((app.millis() - referenceTime) / msPerBeat);
   }
 
-  // 키보드 매핑: qwe / asd / zxc → (genre row, instrument col)
   void handleKey(char keyChar) {
     char k = Character.toLowerCase(keyChar);
     char[][] map = {
-      { 'q', 'w', 'e' }, // Jazz row
-      { 'a', 's', 'd' }, // HipHop row
-      { 'z', 'x', 'c' }  // Funk row
+      { 'q', 'w', 'e' },
+      { 'a', 's', 'd' },
+      { 'z', 'x', 'c' } 
     };
     for (int r = 0; r < map.length; r++) {
       for (int c = 0; c < map[r].length; c++) {
@@ -148,9 +156,6 @@ class TimeQuantizer {
     }
   }
 
-  // ---------------------------------------------------
-  // 간단한 그리드 UI (x,y,w,h 영역 안에 3x3 버튼)
-  // ---------------------------------------------------
   void drawUI(int x, int y, int w, int h) {
     int cols = instKeys.length;
     int rows = genreKeys.length;
@@ -164,7 +169,7 @@ class TimeQuantizer {
         int px = x + c * cellW;
         int py = y + r * cellH;
 
-        if (cl.isPlaying) {
+        if (cl.isPlaying()) {
           app.fill(0, 200, 100);
         } else if (cl.isQueued) {
           if (app.frameCount % 15 < 7) app.fill(255, 200, 0);
@@ -183,7 +188,6 @@ class TimeQuantizer {
     }
   }
 
-  // UI 클릭 처리
   void handleClick(int mx, int my, int x, int y, int w, int h) {
     int cols = instKeys.length;
     int rows = genreKeys.length;
@@ -198,8 +202,7 @@ class TimeQuantizer {
 }
 
 class Clip {
-  SoundFile sound;
-  boolean isPlaying = false;
+  AudioPlayer sound;
   boolean isQueued = false;
   int lengthInBeats;
   String name;
@@ -207,8 +210,8 @@ class Clip {
   int genreIndex;
   int id;
 
-  Clip(PApplet app, String path, int len, String n, int col, int genre, int id) {
-    this.sound = new SoundFile(app, path);
+  Clip(Minim minim, String path, int len, String n, int col, int genre, int id) {
+    this.sound = minim.loadFile(path, 2048);
     this.lengthInBeats = len;
     this.name = n;
     this.colIndex = col;
@@ -218,21 +221,24 @@ class Clip {
 
   void launch() {
     isQueued = false;
-    if (!isPlaying) {
+    if (!isPlaying()) {
       play();
     }
   }
 
   void play() {
-    isPlaying = true;
     sound.loop();
     println(name + " -> Playing");
   }
 
   void stop() {
-    isPlaying = false;
     isQueued = false;
-    sound.stop();
+    sound.pause();
+    sound.rewind();
     println(name + " -> Stopped");
+  }
+  
+  boolean isPlaying() {
+    return sound.isPlaying();
   }
 }
