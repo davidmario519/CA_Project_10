@@ -19,13 +19,13 @@ void setup() {
   String[] fileNames = {
     "hiphop drum.mp3", "hiphop guitar.mp3", "hiphop vocal.mp3",
     "jazz drum.mp3", "jazz guitar.mp3", "jazz vocal.mp3",
-    "cinematic drum.mp3", "cinematic guitar.mp3", "cinematic vocal.mp3"
+    "funk drum.mp3", "funk guitar.mp3", "funk vocal.mp3"
   };
 
   String[] displayNames = {
     "HipHop D", "HipHop G", "HipHop V",
     "Jazz D", "Jazz G", "Jazz V",
-    "Cine D", "Cine G", "Cine V"
+    "Funk D", "Funk G", "Funk V"
   };
 
   int[] lengths = {
