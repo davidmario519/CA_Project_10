@@ -6,11 +6,17 @@ import ddf.minim.analysis.*;
 // CA_Project_10.pde의 장르 변화를 받아 트랙을 교체한다.
 class InstrumentVisualizerWindow extends PApplet {
 
+  String dataPath;
+
+  InstrumentVisualizerWindow(String dataPath) {
+    this.dataPath = dataPath;
+  }
+
   // DRUM
-  SoundFile drumCinematic, drumHiphop, drumJazz;
+  SoundFile drumFunk, drumHiphop, drumJazz;
   SoundFile currentDrum;
   Amplitude drumAmp;
-  FFT drumFFT;
+  processing.sound.FFT drumFFT;
   float freq = 10;
   float amp = 50;
   float smoothFreq = 10;
@@ -22,7 +28,7 @@ class InstrumentVisualizerWindow extends PApplet {
   // GUITAR
   Minim minim;
   AudioPlayer guitar;
-  String[] guitarTracks = { "cinematic/cinematic guitar.mp3", "hiphop/hiphop guitar.mp3", "jazz/jazz guitar.mp3" };
+  String[] guitarTracks = { "jazz_guitar.mp3", "hiphop_guitar.mp3", "funk_guitar.mp3" };
   int guitarTrackIndex = 0;
   color[][] guitarPalettes;
   color[] guitarColors;
@@ -30,7 +36,7 @@ class InstrumentVisualizerWindow extends PApplet {
 
   // VOCAL
   AudioPlayer vocal;
-  String[] vocalTracks = { "cinematic/cinematic vocal.mp3", "hiphop/hiphop vocal.mp3", "jazz/jazz vocal.mp3" };
+  String[] vocalTracks = { "jazz_vocal.mp3", "hiphop_vocal.mp3", "funk_vocal.mp3" };
   int vocalTrackIndex = 0;
   color[][] vocalPalettes;
   color[] vocalColors;
@@ -50,15 +56,17 @@ class InstrumentVisualizerWindow extends PApplet {
     background(bg);
 
     // DRUM INIT
-    drumCinematic = new SoundFile(this, "data/cinematic/cinematic drum.mp3");
-    drumHiphop    = new SoundFile(this, "data/hiphop/hiphop drum.mp3");
-    drumJazz      = new SoundFile(this, "data/jazz/jazz drum.mp3");
-    currentDrum = drumCinematic;
-    currentDrum.loop();
+    drumFunk = new SoundFile(this, "funk_drum.mp3");
+    drumHiphop    = new SoundFile(this, "hiphop_drum.mp3");
+    drumJazz      = new SoundFile(this, "jazz_drum.mp3");
+    currentDrum = drumJazz;
+    if (currentDrum != null) {
+      currentDrum.loop();
+    }
     drumAmp = new Amplitude(this);
-    drumAmp.input(currentDrum);
-    drumFFT = new FFT(this, 512);
-    drumFFT.input(currentDrum);
+    if (currentDrum != null) drumAmp.input(currentDrum);
+    drumFFT = new processing.sound.FFT(this, 512);
+    if (currentDrum != null) drumFFT.input(currentDrum);
 
     // MINIM INIT
     minim = new Minim(this);
@@ -174,31 +182,41 @@ class InstrumentVisualizerWindow extends PApplet {
     SoundFile next = null;
     if (genre == 0) next = drumJazz;
     else if (genre == 1) next = drumHiphop;
-    else if (genre == 2) next = drumCinematic;
+    else if (genre == 2) next = drumFunk;
     if (next == null || next == currentDrum) return;
     if (currentDrum != null) currentDrum.stop();
     currentDrum = next;
-    currentDrum.loop();
-    drumAmp.input(currentDrum);
-    drumFFT.input(currentDrum);
+    if (currentDrum != null) {
+      currentDrum.loop();
+      drumAmp.input(currentDrum);
+      drumFFT.input(currentDrum);
+    }
   }
 
   void loadGuitar(int index) {
     if (index < 0 || index >= guitarTracks.length) return;
     if (guitar != null) guitar.close();
-    guitar = minim.loadFile("data/" + guitarTracks[index], 2048);
-    guitar.loop();
-    guitarColors = guitarPalettes[index];
+    guitar = minim.loadFile(dataPath + "/" + guitarTracks[index], 2048);
+    if (guitar != null) {
+      guitar.loop();
+      guitarColors = guitarPalettes[index];
+    } else {
+      println("[VIS] Failed to load guitar track: " + guitarTracks[index]);
+    }
   }
 
   void loadVocal(int index) {
     if (index < 0 || index >= vocalTracks.length) return;
     if (vocal != null) vocal.close();
-    vocal = minim.loadFile("data/" + vocalTracks[index], 2048);
-    vocal.loop();
-    vocalColors = vocalPalettes[index];
-    smoothZCount = zCount;
-    smoothShift = shift;
+    vocal = minim.loadFile(dataPath + "/" + vocalTracks[index], 2048);
+    if (vocal != null) {
+      vocal.loop();
+      vocalColors = vocalPalettes[index];
+      smoothZCount = zCount;
+      smoothShift = shift;
+    } else {
+      println("[VIS] Failed to load vocal track: " + vocalTracks[index]);
+    }
   }
 
   public void stop() {
