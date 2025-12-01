@@ -2,7 +2,7 @@ class VocalTrigger {
 
   SoundFile jazz;
   SoundFile hiphop;
-  SoundFile cinematic;
+  SoundFile funk;
 
   int last = -1;
   String base = "data"; // 오디오 파일이 있는 기본 폴더
@@ -17,7 +17,7 @@ class VocalTrigger {
   VocalTrigger(PApplet app) {
     jazz      = new SoundFile(app, base + "jazz vocal.mp3");
     hiphop    = new SoundFile(app, base + "hiphop vocal.mp3");
-    cinematic = new SoundFile(app, base + "cinematic vocal.mp3");
+    funk = new SoundFile(app, base + "funk vocal.mp3");
     labels = GENRE_NAMES;
   }
 
@@ -68,13 +68,13 @@ class VocalTrigger {
 
     if (genre == 0) jazz.play();
     else if (genre == 1) hiphop.play();
-    else if (genre == 2) cinematic.play();
+    else if (genre == 2) funk.play();
   }
 
   void stopAll() {
     if (jazz != null) jazz.stop();
     if (hiphop != null) hiphop.stop();
-    if (cinematic != null) cinematic.stop();
+    if (funk != null) funk.stop();
   }
 
   int getCurrentGenre() {
@@ -92,7 +92,7 @@ class VocalTrigger {
   int mapGenre(float v) {
     if (v >= 0.15 && v <= 0.35) return 0; // Jazz ~0.25
     if (v >= 0.40 && v <= 0.60) return 1; // HipHop ~0.50
-    if (v >= 0.65 && v <= 0.85) return 2; // Cinematic ~0.75
+    if (v >= 0.65 && v <= 0.85) return 2; // Funk ~0.75
     return UNKNOWN;
   }
 

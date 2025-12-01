@@ -24,7 +24,7 @@ int drumGenre = -1;
 int guitarGenre = -1;
 int vocalGenre = -1;
 
-String[] GENRE_NAMES = { "Jazz", "HipHop", "Cinematic" };
+String[] GENRE_NAMES = { "Jazz", "HipHop", "Funk" };
 
 // Wekinator 출력 시작값: 보통 1(1,2,3)이나 환경에 따라 0 또는 2일 수 있음
 final int FACE_OSC_PORT = 8338;

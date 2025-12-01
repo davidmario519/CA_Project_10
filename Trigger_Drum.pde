@@ -2,7 +2,7 @@ class DrumTrigger {
 
   SoundFile jazz;
   SoundFile hiphop;
-  SoundFile cinematic;
+  SoundFile funk;
 
   int last = -1;
   String base = "data"; // 오디오 파일이 있는 기본 폴더
@@ -21,7 +21,7 @@ class DrumTrigger {
   DrumTrigger(PApplet app) {
     jazz      = new SoundFile(app, base + "/jazz drum.mp3");
     hiphop    = new SoundFile(app, base + "/hiphop drum.mp3");
-    cinematic = new SoundFile(app, base + "/cinematic drum.mp3");
+    funk = new SoundFile(app, base + "/funk drum.mp3");
     labels = GENRE_NAMES;
   }
 
@@ -66,13 +66,13 @@ class DrumTrigger {
 
     if (genre == 0) jazz.play();
     else if (genre == 1) hiphop.play();
-    else if (genre == 2) cinematic.play();
+    else if (genre == 2) funk.play();
   }
 
   void stopAll() {
     if (jazz != null) jazz.stop();
     if (hiphop != null) hiphop.stop();
-    if (cinematic != null) cinematic.stop();
+    if (funk != null) funk.stop();
   }
 
   int getCurrentGenre() {
@@ -88,7 +88,7 @@ class DrumTrigger {
     // 유지 구간: 약간 넓게
     // Jazz: 화면이 위로 (값↓)
     // HipHop: 오른손 기준 화면을 앞(Z축)으로 90도 눕히고, X축 앞뒤로 기울고, Y축은 폰 옆면이 좌우를 향함
-    // Cinematic: 화면이 아래(값↑)
+    // Funk: 화면이 아래(값↑)
     if (current == 0 && v >= 0.05 && v <= 0.35) return 0;
     if (current == 1 && v >= 0.35 && v <= 0.65) return 1;
     if (current == 2 && v >= 0.60 && v <= 0.95) return 2;

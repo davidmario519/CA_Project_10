@@ -2,7 +2,7 @@ class GuitarTrigger {
 
   SoundFile jazz;
   SoundFile hiphop;
-  SoundFile cinematic;
+  SoundFile funk;
 
   int last = -1;
   String base = "data"; // 오디오 파일이 있는 기본 폴더
@@ -22,7 +22,7 @@ class GuitarTrigger {
   GuitarTrigger(PApplet app) {
     jazz      = new SoundFile(app, base + "/jazz guitar.mp3");
     hiphop    = new SoundFile(app, base + "/hiphop guitar.mp3");
-    cinematic = new SoundFile(app, base + "/cinematic guitar.mp3");
+    funk = new SoundFile(app, base + "/funk guitar.mp3");
     labels = GENRE_NAMES;
   }
 
@@ -74,13 +74,13 @@ class GuitarTrigger {
 
     if (genre == 0) jazz.play();
     else if (genre == 1) hiphop.play();
-    else if (genre == 2) cinematic.play();
+    else if (genre == 2) funk.play();
   }
 
   void stopAll() {
     if (jazz != null) jazz.stop();
     if (hiphop != null) hiphop.stop();
-    if (cinematic != null) cinematic.stop();
+    if (funk != null) funk.stop();
   }
 
   int getCurrentGenre() {
@@ -96,7 +96,7 @@ class GuitarTrigger {
     if (current == REST && v >= 0.00 && v <= 0.12) return REST;
     if (current == 0 && v >= 0.12 && v <= 0.33) return 0; // Jazz
     if (current == 1 && v >= 0.38 && v <= 0.62) return 1; // HipHop
-    if (current == 2 && v >= 0.60 && v <= 0.88) return 2; // Cinematic
+    if (current == 2 && v >= 0.60 && v <= 0.88) return 2; // Funk
 
     // 진입 구간 (strict)
     if (v >= 0.00 && v <= 0.10) return REST;

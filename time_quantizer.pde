@@ -1,6 +1,6 @@
 // TimeQuantizer: 박자(quantization)에 맞춰 루프를 교체/재생하는 매니저
 // - 컬럼 0: Drum, 1: Guitar, 2: Vocal
-// - 장르 인덱스는 GENRE_NAMES와 동일 순서 사용 (0=Jazz, 1=HipHop, 2=Cinematic)
+// - 장르 인덱스는 GENRE_NAMES와 동일 순서 사용 (0=Jazz, 1=HipHop, 2=Funk)
 
 class TimeQuantizer {
 
@@ -14,7 +14,7 @@ class TimeQuantizer {
 
   Clip[] clips = new Clip[9]; // 3장르 x 3컬럼
 
-  String[] genreKeys = { "jazz", "hiphop", "cinematic" };
+  String[] genreKeys = { "jazz", "hiphop", "funk" };
   String[] instKeys = { "drum", "guitar", "vocal" };
   String[] instShort = { "D", "G", "V" };
   String[] genreNames;
@@ -23,7 +23,7 @@ class TimeQuantizer {
   int[][] lengths = {
     { 16, 16, 16 }, // Jazz
     { 16, 16, 8  }, // HipHop
-    { 16, 16, 16 }  // Cinematic
+    { 16, 16, 16 }  // Funk
   };
 
   TimeQuantizer(PApplet app, String[] genreNames) {
@@ -72,8 +72,11 @@ class TimeQuantizer {
     Clip c = clips[idx];
     if (c == null) return;
 
-    // 이미 재생 중이면 그대로 유지
-    if (c.isPlaying) return;
+    // 이미 재생 중인 클립을 다시 클릭하면 해당 컬럼 전체를 정지
+    if (c.isPlaying) {
+      stopColumn(colIndex);
+      return;
+    }
 
     // 같은 컬럼에 대기 중인 다른 클립은 취소
     cancelQueuedInColumn(colIndex, idx);
